@@ -1306,7 +1306,7 @@ main {
     border-top: 1px solid var(--border);
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
     padding: 0.5rem 0;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.6rem);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
     justify-content: space-around;
   }
 
