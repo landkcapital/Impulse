@@ -10,6 +10,13 @@ export default function BudgetDetail() {
   const [budget, setBudget] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  async function handleDeleteTransaction(txId) {
+    await supabase.from("transactions").delete().eq("id", txId);
+    setConfirmDelete(null);
+    fetchData();
+  }
 
   const fetchData = useCallback(async () => {
     const { data: budgetRows, error: budgetError } = await supabase
@@ -153,9 +160,34 @@ export default function BudgetDetail() {
                       {t.note || "No note"}
                     </span>
                   </div>
-                  <span className="transaction-date">
-                    {new Date(t.occurred_at).toLocaleString()}
-                  </span>
+                  <div className="transaction-right">
+                    <span className="transaction-date">
+                      {new Date(t.occurred_at).toLocaleString()}
+                    </span>
+                    {confirmDelete === t.id ? (
+                      <div className="transaction-confirm">
+                        <button
+                          className="btn small danger"
+                          onClick={() => handleDeleteTransaction(t.id)}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          className="btn small secondary"
+                          onClick={() => setConfirmDelete(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="btn small danger tx-delete-btn"
+                        onClick={() => setConfirmDelete(t.id)}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
