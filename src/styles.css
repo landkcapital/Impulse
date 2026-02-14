@@ -1433,12 +1433,17 @@ main {
   }
 }
 
-/* ===== Prevent horizontal overflow & mobile gestures ===== */
+/* ===== Prevent horizontal overflow ===== */
 html, body {
   overflow-x: hidden;
-  overscroll-behavior: none;
 }
 
-html {
-  touch-action: manipulation;
+@media (max-width: 640px) {
+  html, body {
+    overscroll-behavior: none;
+  }
+
+  html {
+    touch-action: manipulation;
+  }
 }
