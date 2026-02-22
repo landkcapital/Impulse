@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   fetchGoals,
   createGoal,
   updateGoal,
   deleteGoal,
+  fetchGoalImpulseCounts,
 } from "../lib/impulses";
 import Loading from "../components/Loading";
 
@@ -19,11 +20,17 @@ export default function Goals() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [lightboxGoal, setLightboxGoal] = useState(null);
+  const [sortBy, setSortBy] = useState("sort_order");
+  const [impulseCounts, setImpulseCounts] = useState({});
 
   const loadGoals = useCallback(async () => {
     try {
-      const data = await fetchGoals();
+      const [data, counts] = await Promise.all([
+        fetchGoals(),
+        fetchGoalImpulseCounts(),
+      ]);
       setGoals(data);
+      setImpulseCounts(counts);
       setError(null);
     } catch (err) {
       setError(err.message || "Failed to load goals");
@@ -35,6 +42,28 @@ export default function Goals() {
   useEffect(() => {
     loadGoals();
   }, [loadGoals]);
+
+  const sortedGoals = useMemo(() => {
+    const list = [...goals];
+    switch (sortBy) {
+      case "alpha":
+        list.sort((a, b) =>
+          a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+        );
+        break;
+      case "recent":
+        list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        break;
+      case "most_impulses":
+        list.sort(
+          (a, b) => (impulseCounts[b.id] || 0) - (impulseCounts[a.id] || 0)
+        );
+        break;
+      default:
+        break;
+    }
+    return list;
+  }, [goals, sortBy, impulseCounts]);
 
   function resetForm() {
     setTitle("");
@@ -177,13 +206,30 @@ export default function Goals() {
         </button>
       )}
 
+      {goals.length > 0 && !showForm && (
+        <div className="sort-bar">
+          <label className="sort-label" htmlFor="goal-sort">Sort by</label>
+          <select
+            id="goal-sort"
+            className="sort-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="sort_order">Default</option>
+            <option value="alpha">Alphabetical</option>
+            <option value="recent">Recently Added</option>
+            <option value="most_impulses">Most Impulses</option>
+          </select>
+        </div>
+      )}
+
       {goals.length === 0 && !showForm ? (
         <div className="empty-state card">
           <p>No goals yet. Add a goal to start tracking your impulses!</p>
         </div>
       ) : (
         <div className="goal-list">
-          {goals.map((goal) => (
+          {sortedGoals.map((goal) => (
             <div key={goal.id} className="card goal-card">
               <div className="goal-card-top">
                 {goal.image_url ? (
@@ -197,7 +243,14 @@ export default function Goals() {
                   <div className="goal-card-placeholder">&#9733;</div>
                 )}
                 <div className="goal-card-info">
-                  <h3 className="goal-card-name">{goal.title}</h3>
+                  <h3 className="goal-card-name">
+                    {goal.title}
+                    {sortBy === "most_impulses" && (
+                      <span className="goal-impulse-count">
+                        {impulseCounts[goal.id] || 0} impulse{(impulseCounts[goal.id] || 0) !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </h3>
                   <div className="goal-card-date">
                     Added {new Date(goal.created_at).toLocaleDateString()}
                   </div>

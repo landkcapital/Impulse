@@ -19,7 +19,24 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const steps = ["goal", "describe", "type", "acted", "notes"];
+  // Multi-goal state
+  const [addMore, setAddMore] = useState(false);
+  const [selectedGoal2, setSelectedGoal2] = useState(null);
+  const [impulseType2, setImpulseType2] = useState(null);
+  const [actedOn2, setActedOn2] = useState(false);
+
+  // Dynamic steps based on whether user wants to add another goal
+  const canAddMore = goals.length > 1;
+  const baseSteps = canAddMore
+    ? ["goal", "describe", "type", "acted", "addMore"]
+    : ["goal", "describe", "type", "acted"];
+  const extraSteps = addMore && canAddMore ? ["goal2", "type2", "acted2"] : [];
+  const steps = [...baseSteps, ...extraSteps, "notes"];
+
+  const currentStep = steps[step];
+
+  const goal1Name = goals.find((g) => g.id === selectedGoal)?.title || "";
+  const goal2Name = goals.find((g) => g.id === selectedGoal2)?.title || "";
 
   async function handleSubmit() {
     setSaving(true);
@@ -32,6 +49,17 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
         actedOn,
         notes: notes.trim(),
       });
+
+      if (addMore && selectedGoal2) {
+        await logImpulse({
+          goalId: selectedGoal2,
+          description: description.trim(),
+          impulseType: impulseType2,
+          actedOn: actedOn2,
+          notes: notes.trim(),
+        });
+      }
+
       onLogged();
       onClose();
     } catch (err) {
@@ -41,10 +69,27 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
   }
 
   function canAdvance() {
-    if (step === 0) return selectedGoal != null;
-    if (step === 1) return description.trim().length > 0;
-    if (step === 2) return impulseType != null;
-    return true;
+    switch (currentStep) {
+      case "goal": return selectedGoal != null;
+      case "describe": return description.trim().length > 0;
+      case "type": return impulseType != null;
+      case "acted": return true;
+      case "addMore": return true;
+      case "goal2": return selectedGoal2 != null;
+      case "type2": return impulseType2 != null;
+      case "acted2": return true;
+      case "notes": return true;
+      default: return true;
+    }
+  }
+
+  function handleBack() {
+    if (currentStep === "notes" && !addMore && canAddMore) {
+      // Jump back to addMore step (index 4)
+      setStep(4);
+    } else {
+      setStep(step - 1);
+    }
   }
 
   return (
@@ -70,7 +115,7 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
 
         {error && <p className="form-error">{error}</p>}
 
-        {step === 0 && (
+        {currentStep === "goal" && (
           <div className="modal-step">
             <p className="step-title">Which goal was this impulse about?</p>
             <div className="goal-select-list">
@@ -98,7 +143,7 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
           </div>
         )}
 
-        {step === 1 && (
+        {currentStep === "describe" && (
           <div className="modal-step">
             <p className="step-title">Describe your impulse</p>
             <div className="form-group" style={{ marginBottom: 0 }}>
@@ -112,9 +157,11 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
           </div>
         )}
 
-        {step === 2 && (
+        {currentStep === "type" && (
           <div className="modal-step">
-            <p className="step-title">Was this impulse positive or negative?</p>
+            <p className="step-title">
+              For <strong>{goal1Name}</strong>, was this positive or negative?
+            </p>
             <div className="type-btn-group">
               <button
                 className={`type-btn positive ${
@@ -124,9 +171,7 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
               >
                 <span className="type-btn-icon">&#9650;</span>
                 <span className="type-btn-label">Positive</span>
-                <span className="type-btn-desc">
-                  Would help your goal
-                </span>
+                <span className="type-btn-desc">Would help your goal</span>
               </button>
               <button
                 className={`type-btn negative ${
@@ -136,17 +181,17 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
               >
                 <span className="type-btn-icon">&#9660;</span>
                 <span className="type-btn-label">Negative</span>
-                <span className="type-btn-desc">
-                  Would hurt your goal
-                </span>
+                <span className="type-btn-desc">Would hurt your goal</span>
               </button>
             </div>
           </div>
         )}
 
-        {step === 3 && (
+        {currentStep === "acted" && (
           <div className="modal-step">
-            <p className="step-title">Did you act on this impulse?</p>
+            <p className="step-title">
+              For <strong>{goal1Name}</strong>, did you act on it?
+            </p>
             <div className="acted-toggle">
               <div className="toggle-switch-wrapper">
                 <span className={`toggle-label ${!actedOn ? "active" : ""}`}>
@@ -168,7 +213,122 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
           </div>
         )}
 
-        {step === 4 && (
+        {currentStep === "addMore" && (
+          <div className="modal-step">
+            <p className="step-title">Does this impulse affect another goal?</p>
+            <div className="add-more-options">
+              <button
+                className="btn primary"
+                onClick={() => {
+                  setAddMore(true);
+                  setStep(step + 1);
+                }}
+              >
+                Yes, add another goal
+              </button>
+              <button
+                className="btn secondary"
+                onClick={() => {
+                  setAddMore(false);
+                  setSelectedGoal2(null);
+                  setImpulseType2(null);
+                  setActedOn2(false);
+                  setStep(step + 1);
+                }}
+              >
+                No, continue
+              </button>
+            </div>
+          </div>
+        )}
+
+        {currentStep === "goal2" && (
+          <div className="modal-step">
+            <p className="step-title">Which other goal does this affect?</p>
+            <div className="goal-select-list">
+              {goals
+                .filter((g) => g.id !== selectedGoal)
+                .map((g) => (
+                  <div
+                    key={g.id}
+                    className={`goal-select-item ${
+                      selectedGoal2 === g.id ? "selected" : ""
+                    }`}
+                    onClick={() => setSelectedGoal2(g.id)}
+                  >
+                    {g.image_url ? (
+                      <img
+                        src={g.image_url}
+                        alt={g.title}
+                        className="goal-select-image"
+                      />
+                    ) : (
+                      <div className="goal-select-placeholder">&#9733;</div>
+                    )}
+                    <span className="goal-select-title">{g.title}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {currentStep === "type2" && (
+          <div className="modal-step">
+            <p className="step-title">
+              For <strong>{goal2Name}</strong>, was this positive or negative?
+            </p>
+            <div className="type-btn-group">
+              <button
+                className={`type-btn positive ${
+                  impulseType2 === "positive" ? "selected" : ""
+                }`}
+                onClick={() => setImpulseType2("positive")}
+              >
+                <span className="type-btn-icon">&#9650;</span>
+                <span className="type-btn-label">Positive</span>
+                <span className="type-btn-desc">Would help this goal</span>
+              </button>
+              <button
+                className={`type-btn negative ${
+                  impulseType2 === "negative" ? "selected" : ""
+                }`}
+                onClick={() => setImpulseType2("negative")}
+              >
+                <span className="type-btn-icon">&#9660;</span>
+                <span className="type-btn-label">Negative</span>
+                <span className="type-btn-desc">Would hurt this goal</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {currentStep === "acted2" && (
+          <div className="modal-step">
+            <p className="step-title">
+              For <strong>{goal2Name}</strong>, did you act on it?
+            </p>
+            <div className="acted-toggle">
+              <div className="toggle-switch-wrapper">
+                <span className={`toggle-label ${!actedOn2 ? "active" : ""}`}>
+                  No
+                </span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={actedOn2}
+                    onChange={(e) => setActedOn2(e.target.checked)}
+                  />
+                  <span className="toggle-slider" />
+                </label>
+                <span className={`toggle-label ${actedOn2 ? "active" : ""}`}>
+                  Yes
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {currentStep === "notes" && (
           <div className="modal-step">
             <p className="step-title">Add a reflection note (optional)</p>
             <div className="form-group" style={{ marginBottom: 0 }}>
@@ -184,15 +344,20 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
         )}
 
         <div className="step-nav">
-          {step > 0 && (
-            <button
-              className="btn secondary"
-              onClick={() => setStep(step - 1)}
-            >
+          {step > 0 && currentStep !== "addMore" && (
+            <button className="btn secondary" onClick={handleBack}>
               Back
             </button>
           )}
-          {step < 4 ? (
+          {currentStep === "notes" ? (
+            <button
+              className="btn primary"
+              disabled={saving}
+              onClick={handleSubmit}
+            >
+              {saving ? "Saving..." : addMore ? "Log Impulses" : "Log Impulse"}
+            </button>
+          ) : currentStep !== "addMore" ? (
             <button
               className="btn primary"
               disabled={!canAdvance()}
@@ -200,15 +365,7 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
             >
               Next
             </button>
-          ) : (
-            <button
-              className="btn primary"
-              disabled={saving}
-              onClick={handleSubmit}
-            >
-              {saving ? "Saving..." : "Log Impulse"}
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

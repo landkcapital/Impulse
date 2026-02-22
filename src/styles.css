@@ -872,6 +872,64 @@ main {
   color: var(--text-muted);
 }
 
+/* ===== Goal Sort Bar ===== */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.sort-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.sort-select {
+  flex: 1;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238a8a8a' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.sort-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--glow);
+}
+
+.goal-impulse-count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-left: 0.5rem;
+}
+
+/* ===== Add More Goal Choice ===== */
+.add-more-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.add-more-options .btn {
+  padding: 1rem 1.5rem;
+  font-size: 0.95rem;
+}
+
 .goal-card-image.clickable {
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;

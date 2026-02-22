@@ -114,6 +114,19 @@ export async function deleteImpulse(id) {
   if (error) throw error;
 }
 
+export async function fetchGoalImpulseCounts() {
+  const { data, error } = await supabase
+    .from("impulses")
+    .select("goal_id");
+  if (error) throw error;
+
+  const counts = {};
+  for (const row of data || []) {
+    counts[row.goal_id] = (counts[row.goal_id] || 0) + 1;
+  }
+  return counts;
+}
+
 export async function fetchImpulses({ from, to } = {}) {
   let query = supabase
     .from("impulses")
