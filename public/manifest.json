@@ -4,7 +4,7 @@
   "description": "Track your impulses. Master your goals.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
+  "background_color": "#f5f5fa",
   "theme_color": "#a855f7",
   "orientation": "portrait",
   "icons": [
