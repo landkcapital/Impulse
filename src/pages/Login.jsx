@@ -21,7 +21,6 @@ export default function Login({ onAuth }) {
         setMessage("Check your email to confirm your account.");
       } else {
         const data = await signIn(email, password);
-        // Set session immediately to prevent login bounce
         if (data?.session) {
           onAuth(data.session);
           return;
@@ -37,8 +36,8 @@ export default function Login({ onAuth }) {
   return (
     <div className="login-page">
       <div className="login-container card">
-        <h1 className="login-logo">ZeroLine</h1>
-        <p className="login-subtitle">Personal Budget Tracker</p>
+        <h1 className="login-logo">Impulse</h1>
+        <p className="login-subtitle">Track your impulses. Master your goals.</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Email</label>

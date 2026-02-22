@@ -1,11 +1,11 @@
 {
-  "name": "ZeroLine",
-  "short_name": "ZeroLine",
-  "description": "Budget tracker – get to zero, stay on the line",
+  "name": "Impulse",
+  "short_name": "Impulse",
+  "description": "Track your impulses. Master your goals.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f5f7fa",
-  "theme_color": "#2f7dff",
+  "background_color": "#0a0a0a",
+  "theme_color": "#a855f7",
   "orientation": "portrait",
   "icons": [
     {

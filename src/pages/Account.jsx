@@ -25,14 +25,14 @@ export default function Account() {
         if (userErr) throw userErr;
         setUser(u);
 
-        const [budgetsResult, txResult] = await Promise.all([
-          supabase.from("budgets").select("id", { count: "exact", head: true }),
-          supabase.from("transactions").select("id", { count: "exact", head: true }),
+        const [goalsResult, impulsesResult] = await Promise.all([
+          supabase.from("impulse_goals").select("id", { count: "exact", head: true }),
+          supabase.from("impulses").select("id", { count: "exact", head: true }),
         ]);
 
         setStats({
-          budgets: budgetsResult.count || 0,
-          transactions: txResult.count || 0,
+          goals: goalsResult.count || 0,
+          impulses: impulsesResult.count || 0,
         });
       } catch (err) {
         setError(err.message || "Failed to load account");
@@ -101,7 +101,7 @@ export default function Account() {
   }
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return "—";
+    if (!dateStr) return "\u2014";
     return new Date(dateStr).toLocaleDateString(undefined, {
       year: "numeric",
       month: "long",
@@ -132,12 +132,12 @@ export default function Account() {
       {stats && (
         <div className="card account-stats">
           <div className="account-stat">
-            <span className="account-stat-value">{stats.budgets}</span>
-            <span className="account-stat-label">Budgets</span>
+            <span className="account-stat-value">{stats.goals}</span>
+            <span className="account-stat-label">Goals</span>
           </div>
           <div className="account-stat">
-            <span className="account-stat-value">{stats.transactions}</span>
-            <span className="account-stat-label">Transactions</span>
+            <span className="account-stat-value">{stats.impulses}</span>
+            <span className="account-stat-label">Impulses</span>
           </div>
         </div>
       )}

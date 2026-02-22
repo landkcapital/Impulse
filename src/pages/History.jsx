@@ -1,267 +1,356 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "../lib/supabase";
 import {
-  getPeriodRange,
-  stepPeriod,
-  formatPeriodRange,
-  getPeriodLabel,
-} from "../lib/period";
+  fetchImpulses,
+  deleteImpulse,
+  updateImpulse,
+  computeScores,
+} from "../lib/impulses";
 import Loading from "../components/Loading";
 
-function stripRef(note) {
-  if (!note) return note;
-  return note.replace(/\s*\[ref:[^\]]+\]$/, "");
+function getWeekRange(refDate) {
+  const d = new Date(refDate);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const start = new Date(d.setDate(diff));
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+function formatWeekRange(start, end) {
+  const opts = { month: "short", day: "numeric" };
+  return `${start.toLocaleDateString(undefined, opts)} – ${end.toLocaleDateString(undefined, opts)}`;
+}
+
+function getDaysInRange(start, end) {
+  const days = [];
+  const d = new Date(start);
+  while (d <= end) {
+    days.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+}
+
+function isGood(impulse) {
+  const positive = impulse.impulse_type === "positive";
+  return (positive && impulse.acted_on) || (!positive && !impulse.acted_on);
 }
 
 export default function History() {
-  const [period, setPeriod] = useState("fortnightly");
   const [refDate, setRefDate] = useState(new Date());
-  const [budgets, setBudgets] = useState([]);
-  const [transactions, setTransactions] = useState([]);
+  const [impulses, setImpulses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editDesc, setEditDesc] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editActed, setEditActed] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const { start, end } = getPeriodRange(period, refDate);
+  const { start, end } = getWeekRange(refDate);
 
-  const fetchData = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const { start: s, end: e } = getPeriodRange(period, refDate);
-
-      const { data: budgetsData, error: budgetsErr } = await supabase
-        .from("budgets")
-        .select("*")
-        .order("name");
-
-      if (budgetsErr) throw budgetsErr;
-      setBudgets(budgetsData || []);
-
-      const { data: txData, error: txErr } = await supabase
-        .from("transactions")
-        .select("*")
-        .gte("occurred_at", s.toISOString())
-        .lte("occurred_at", e.toISOString())
-        .order("occurred_at", { ascending: false });
-
-      if (txErr) throw txErr;
-      setTransactions(txData || []);
+      const { start: s, end: e } = getWeekRange(refDate);
+      const data = await fetchImpulses({
+        from: s.toISOString(),
+        to: e.toISOString(),
+      });
+      setImpulses(data);
       setError(null);
     } catch (err) {
       setError(err.message || "Failed to load history");
     } finally {
       setLoading(false);
     }
-  }, [period, refDate]);
+  }, [refDate]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    loadData();
+  }, [loadData]);
 
   function handlePrev() {
-    setRefDate(stepPeriod(period, refDate, "prev"));
+    const d = new Date(refDate);
+    d.setDate(d.getDate() - 7);
+    setRefDate(d);
   }
 
   function handleNext() {
-    setRefDate(stepPeriod(period, refDate, "next"));
+    const d = new Date(refDate);
+    d.setDate(d.getDate() + 7);
+    setRefDate(d);
   }
 
-  function handlePeriodChange(newPeriod) {
-    setPeriod(newPeriod);
-    setRefDate(new Date());
+  function startEdit(imp) {
+    setEditingId(imp.id);
+    setEditDesc(imp.description);
+    setEditType(imp.impulse_type);
+    setEditActed(imp.acted_on);
   }
 
-  const spentByBudget = {};
-  for (const t of transactions) {
-    spentByBudget[t.budget_id] = (spentByBudget[t.budget_id] || 0) + t.amount;
+  async function handleSaveEdit() {
+    try {
+      await updateImpulse(editingId, {
+        description: editDesc.trim(),
+        impulseType: editType,
+        actedOn: editActed,
+      });
+      setEditingId(null);
+      await loadData();
+    } catch (err) {
+      setError(err.message || "Failed to update");
+    }
   }
 
-  const budgetMap = {};
-  for (const b of budgets) {
-    budgetMap[b.id] = b;
+  async function handleDelete(id) {
+    try {
+      await deleteImpulse(id);
+      setConfirmDelete(null);
+      await loadData();
+    } catch (err) {
+      setError(err.message || "Failed to delete");
+    }
   }
 
-  const subscriptions = budgets.filter((b) => b.type === "subscription");
-  const spendingBudgets = budgets.filter((b) => b.type !== "subscription");
+  // Build daily graph data
+  const days = getDaysInRange(start, end);
+  const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-  const totalSubscriptions = subscriptions.reduce((s, b) => s + b.goal_amount, 0);
-  const totalBudget = spendingBudgets.reduce((s, b) => s + b.goal_amount, 0);
-  const totalSpent = transactions.reduce((s, t) => s + t.amount, 0);
-  const totalRemaining = totalBudget - totalSpent;
+  const dailyData = days.map((day) => {
+    const dayStart = new Date(day);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(day);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const dayImpulses = impulses.filter((imp) => {
+      const t = new Date(imp.created_at).getTime();
+      return t >= dayStart.getTime() && t <= dayEnd.getTime();
+    });
+
+    const { good, bad } = computeScores(dayImpulses);
+    return { good, bad, total: good + bad };
+  });
+
+  const maxCount = Math.max(1, ...dailyData.map((d) => Math.max(d.good, d.bad)));
+
+  const weekScores = computeScores(impulses);
 
   return (
     <div className="page history-page">
-      <div className="card history-controls">
-        <div className="history-period-selector">
-          {["weekly", "fortnightly", "4-weekly"].map((p) => (
-            <button
-              key={p}
-              className={`btn small ${period === p ? "active-period" : ""}`}
-              onClick={() => handlePeriodChange(p)}
-            >
-              {p === "weekly"
-                ? "Week"
-                : p === "fortnightly"
-                  ? "Fortnight"
-                  : "4 Weeks"}
-            </button>
-          ))}
-        </div>
-        <div className="history-nav">
-          <button className="btn small" onClick={handlePrev}>
-            &larr;
-          </button>
-          <span className="history-range-label">
-            {formatPeriodRange(period, start, end)}
-          </span>
-          <button className="btn small" onClick={handleNext}>
-            &rarr;
-          </button>
-        </div>
+      <h2 className="page-title">History</h2>
+
+      <div className="history-nav">
+        <button className="btn small" onClick={handlePrev}>
+          &larr;
+        </button>
+        <span className="history-range-label">
+          {formatWeekRange(start, end)}
+        </span>
+        <button className="btn small" onClick={handleNext}>
+          &rarr;
+        </button>
       </div>
 
       {loading ? (
         <Loading />
       ) : error ? (
-        <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
+        <div
+          className="card"
+          style={{ padding: "1.5rem", textAlign: "center" }}
+        >
           <p className="form-error">{error}</p>
-          <button className="btn primary" onClick={fetchData} style={{ marginTop: "1rem" }}>
+          <button
+            className="btn primary"
+            onClick={loadData}
+            style={{ marginTop: "1rem" }}
+          >
             Retry
           </button>
         </div>
       ) : (
         <>
-          <div className="card summary-card">
-            <div className="summary-bar summary-bar-4">
-              <div className="summary-item">
-                <span className="summary-label">Subscriptions</span>
-                <span className="summary-value">
-                  ${totalSubscriptions.toFixed(2)}
-                </span>
+          {/* Week summary */}
+          <div className="score-display">
+            <div className="score-item">
+              <span className="score-arrow green">&#9650;</span>
+              <span className="score-count green">{weekScores.good}</span>
+            </div>
+            <div className="score-item">
+              <span className="score-arrow red">&#9660;</span>
+              <span className="score-count red">{weekScores.bad}</span>
+            </div>
+          </div>
+
+          {/* Graph */}
+          <div className="card impulse-graph">
+            <div className="graph-bars">
+              {dailyData.map((d, i) => (
+                <div key={i} className="graph-bar-col">
+                  <div className="graph-bar-stack">
+                    {d.good > 0 && (
+                      <div
+                        className="graph-bar green"
+                        style={{
+                          height: `${(d.good / maxCount) * 100}%`,
+                        }}
+                      />
+                    )}
+                    {d.bad > 0 && (
+                      <div
+                        className="graph-bar red"
+                        style={{
+                          height: `${(d.bad / maxCount) * 100}%`,
+                        }}
+                      />
+                    )}
+                  </div>
+                  <span className="graph-day-label">{dayLabels[i]}</span>
+                </div>
+              ))}
+            </div>
+            <div className="graph-legend">
+              <div className="graph-legend-item">
+                <div className="legend-dot green" />
+                <span>Good</span>
               </div>
-              <div className="summary-item">
-                <span className="summary-label">Spending Budget</span>
-                <span className="summary-value">
-                  ${totalBudget.toFixed(2)}
-                </span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Spent</span>
-                <span className="summary-value">
-                  ${totalSpent.toFixed(2)}
-                </span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Remaining</span>
-                <span
-                  className={`summary-value ${totalRemaining >= 0 ? "positive" : "negative"}`}
-                >
-                  ${totalRemaining.toFixed(2)}
-                </span>
+              <div className="graph-legend-item">
+                <div className="legend-dot red" />
+                <span>Bad</span>
               </div>
             </div>
           </div>
 
-          {subscriptions.length > 0 && (
-            <div className="card subscription-section">
-              <div className="subscription-header">
-                <h3 className="subscription-section-title">Subscriptions</h3>
-                <span className="subscription-total">
-                  ${totalSubscriptions.toFixed(2)}
-                </span>
-              </div>
-              {subscriptions.map((sub) => (
-                <div key={sub.id} className="subscription-row">
-                  <div className="subscription-row-left">
-                    <span className="subscription-name">{sub.name}</span>
-                    <span className="period-badge">{getPeriodLabel(sub.period)}</span>
-                  </div>
-                  <div className="subscription-row-right">
-                    <span className="subscription-amount">
-                      ${sub.goal_amount.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              ))}
+          {/* Impulse list */}
+          <h3 className="section-title">All Impulses</h3>
+          {impulses.length === 0 ? (
+            <div className="empty-state card">
+              <p>No impulses logged this week.</p>
             </div>
-          )}
+          ) : (
+            <div className="impulse-list">
+              {impulses.map((imp) => {
+                const good = isGood(imp);
+                const goalTitle = imp.impulse_goals?.title || "Unknown";
 
-          <h3 className="section-title">Spending Breakdown</h3>
-          <div className="history-budget-list">
-            {spendingBudgets.length === 0 ? (
-              <div className="empty-state card">
-                <p>No spending budgets.</p>
-              </div>
-            ) : (
-              spendingBudgets.map((b) => {
-                const bSpent = spentByBudget[b.id] || 0;
-                const bRemaining = b.goal_amount - bSpent;
-                const bProgress =
-                  b.goal_amount > 0 ? (bSpent / b.goal_amount) * 100 : 0;
+                if (editingId === imp.id) {
+                  return (
+                    <div key={imp.id} className="card" style={{ padding: "1rem" }}>
+                      <div className="edit-impulse-form">
+                        <div className="form-group" style={{ marginBottom: "0.5rem" }}>
+                          <label>Description</label>
+                          <textarea
+                            value={editDesc}
+                            onChange={(e) => setEditDesc(e.target.value)}
+                            rows={2}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: "0.5rem" }}>
+                          <label>Type</label>
+                          <select
+                            value={editType}
+                            onChange={(e) => setEditType(e.target.value)}
+                          >
+                            <option value="positive">Positive</option>
+                            <option value="negative">Negative</option>
+                          </select>
+                        </div>
+                        <div className="form-group" style={{ marginBottom: "0.5rem" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", textTransform: "none", letterSpacing: "normal" }}>
+                            <input
+                              type="checkbox"
+                              checked={editActed}
+                              onChange={(e) => setEditActed(e.target.checked)}
+                              style={{ width: "auto" }}
+                            />
+                            Acted on it
+                          </label>
+                        </div>
+                        <div className="form-actions">
+                          <button className="btn primary" onClick={handleSaveEdit}>
+                            Save
+                          </button>
+                          <button
+                            className="btn secondary"
+                            onClick={() => setEditingId(null)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
-                  <div key={b.id} className="card history-budget-row">
-                    <div className="history-budget-name">
-                      <span>{b.name}</span>
-                      <span className="period-badge">{b.period}</span>
-                    </div>
-                    <div className="budget-stats">
-                      <div className="stat">
-                        <span className="stat-label">Goal</span>
-                        <span className="stat-value">
-                          ${b.goal_amount.toFixed(2)}
+                  <div key={imp.id} className="card impulse-item">
+                    <div
+                      className={`impulse-type-indicator ${good ? "good" : "bad"}`}
+                    />
+                    <div className="impulse-item-content">
+                      <div className="impulse-item-desc">{imp.description}</div>
+                      <div className="impulse-item-meta">
+                        <span>{goalTitle}</span>
+                        <span>&middot;</span>
+                        <span>
+                          {imp.impulse_type === "positive"
+                            ? "Positive"
+                            : "Negative"}
                         </span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">Spent</span>
-                        <span className="stat-value">
-                          ${bSpent.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">Remaining</span>
                         <span
-                          className={`stat-value ${bRemaining >= 0 ? "positive" : "negative"}`}
+                          className={`impulse-item-tag ${
+                            imp.acted_on ? "acted" : "resisted"
+                          }`}
                         >
-                          ${bRemaining.toFixed(2)}
+                          {imp.acted_on ? "Acted" : "Resisted"}
+                        </span>
+                        <span>&middot;</span>
+                        <span>
+                          {new Date(imp.created_at).toLocaleString(undefined, {
+                            weekday: "short",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
                         </span>
                       </div>
                     </div>
-                    <div className="progress-bar">
-                      <div
-                        className={`progress-fill ${bProgress > 100 ? "over" : ""}`}
-                        style={{ width: `${Math.min(bProgress, 100)}%` }}
-                      />
+                    <div className="impulse-item-actions">
+                      <button
+                        className="btn small secondary"
+                        onClick={() => startEdit(imp)}
+                      >
+                        Edit
+                      </button>
+                      {confirmDelete === imp.id ? (
+                        <div className="goal-delete-confirm">
+                          <button
+                            className="btn small danger"
+                            onClick={() => handleDelete(imp.id)}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            className="btn small"
+                            onClick={() => setConfirmDelete(null)}
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="btn small danger"
+                          onClick={() => setConfirmDelete(imp.id)}
+                        >
+                          &times;
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
-              })
-            )}
-          </div>
-
-          <h3 className="section-title">All Transactions</h3>
-          {transactions.length === 0 ? (
-            <div className="empty-state card">
-              <p>No transactions in this period.</p>
-            </div>
-          ) : (
-            <div className="transaction-list">
-              {transactions.map((t) => (
-                <div key={t.id} className="card transaction-item">
-                  <div className="transaction-info">
-                    <span className="transaction-amount">
-                      ${t.amount.toFixed(2)}
-                    </span>
-                    <span className="transaction-budget-tag">
-                      {budgetMap[t.budget_id]?.name || "Unknown"}
-                    </span>
-                    <span className="transaction-note">
-                      {stripRef(t.note) || "No note"}
-                    </span>
-                  </div>
-                  <span className="transaction-date">
-                    {new Date(t.occurred_at).toLocaleString()}
-                  </span>
-                </div>
-              ))}
+              })}
             </div>
           )}
         </>

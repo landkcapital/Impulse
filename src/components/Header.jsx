@@ -15,7 +15,7 @@ export default function Header() {
       <header className="header">
         <div className="header-left">
           <h1 className="logo" onClick={() => navigate("/")}>
-            ZeroLine
+            Impulse
           </h1>
         </div>
         <nav className="header-nav desktop-nav">
@@ -24,12 +24,6 @@ export default function Header() {
             onClick={() => navigate("/")}
           >
             Home
-          </button>
-          <button
-            className={`nav-btn ${location.pathname === "/budgets" ? "active" : ""}`}
-            onClick={() => navigate("/budgets")}
-          >
-            Budgets
           </button>
           <button
             className={`nav-btn ${location.pathname === "/goals" ? "active" : ""}`}
@@ -42,6 +36,12 @@ export default function Header() {
             onClick={() => navigate("/history")}
           >
             History
+          </button>
+          <button
+            className={`nav-btn ${location.pathname === "/settings" ? "active" : ""}`}
+            onClick={() => navigate("/settings")}
+          >
+            Settings
           </button>
           <button
             className={`nav-btn ${location.pathname === "/account" ? "active" : ""}`}
@@ -64,13 +64,6 @@ export default function Header() {
           <span>Home</span>
         </button>
         <button
-          className={`bottom-nav-btn ${location.pathname === "/budgets" ? "active" : ""}`}
-          onClick={() => navigate("/budgets")}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          <span>Budgets</span>
-        </button>
-        <button
           className={`bottom-nav-btn ${location.pathname === "/goals" ? "active" : ""}`}
           onClick={() => navigate("/goals")}
         >
@@ -83,6 +76,13 @@ export default function Header() {
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           <span>History</span>
+        </button>
+        <button
+          className={`bottom-nav-btn ${location.pathname === "/settings" ? "active" : ""}`}
+          onClick={() => navigate("/settings")}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Settings</span>
         </button>
         <button
           className={`bottom-nav-btn ${location.pathname === "/account" ? "active" : ""}`}

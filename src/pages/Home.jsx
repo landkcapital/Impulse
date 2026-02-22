@@ -1,113 +1,223 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabase";
-import { getPeriodStart, getPeriodLabel, stepPeriod, PERIOD_DAYS, VIEW_PERIODS, VIEW_LABELS } from "../lib/period";
-import { computeCarriedDebt } from "../lib/debt";
-import { collectLeftovers, processContributions } from "../lib/goals";
-import BudgetCard from "../components/BudgetCard";
-import AffordCheckCard from "../components/AffordCheckCard";
-import AddTransactionModal from "../components/AddTransactionModal";
+import {
+  fetchGoals,
+  fetchTodayImpulses,
+  logImpulse,
+  deleteImpulse,
+  computeScores,
+} from "../lib/impulses";
 import Loading from "../components/Loading";
 
-function normalize(amount, fromPeriod, toPeriod) {
-  const fromDays = PERIOD_DAYS[fromPeriod] || 14;
-  const toDays = PERIOD_DAYS[toPeriod] || 14;
-  return amount * (toDays / fromDays);
+function LogImpulseModal({ goals, onClose, onLogged }) {
+  const [step, setStep] = useState(0);
+  const [selectedGoal, setSelectedGoal] = useState(null);
+  const [description, setDescription] = useState("");
+  const [impulseType, setImpulseType] = useState(null);
+  const [actedOn, setActedOn] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const steps = ["goal", "describe", "type", "acted"];
+
+  async function handleSubmit() {
+    setSaving(true);
+    setError(null);
+    try {
+      await logImpulse({
+        goalId: selectedGoal,
+        description: description.trim(),
+        impulseType,
+        actedOn,
+      });
+      onLogged();
+      onClose();
+    } catch (err) {
+      setError(err.message || "Failed to log impulse");
+      setSaving(false);
+    }
+  }
+
+  function canAdvance() {
+    if (step === 0) return selectedGoal != null;
+    if (step === 1) return description.trim().length > 0;
+    if (step === 2) return impulseType != null;
+    return true;
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Log Impulse</h2>
+          <button className="close-btn" onClick={onClose}>
+            &times;
+          </button>
+        </div>
+
+        <div className="step-dots">
+          {steps.map((s, i) => (
+            <div
+              key={s}
+              className={`step-dot ${i === step ? "active" : ""} ${
+                i < step ? "completed" : ""
+              }`}
+            />
+          ))}
+        </div>
+
+        {error && <p className="form-error">{error}</p>}
+
+        {step === 0 && (
+          <div className="modal-step">
+            <p className="step-title">Which goal was this impulse about?</p>
+            <div className="goal-select-list">
+              {goals.map((g) => (
+                <div
+                  key={g.id}
+                  className={`goal-select-item ${
+                    selectedGoal === g.id ? "selected" : ""
+                  }`}
+                  onClick={() => setSelectedGoal(g.id)}
+                >
+                  {g.image_url ? (
+                    <img
+                      src={g.image_url}
+                      alt={g.title}
+                      className="goal-select-image"
+                    />
+                  ) : (
+                    <div className="goal-select-placeholder">&#9733;</div>
+                  )}
+                  <span className="goal-select-title">{g.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="modal-step">
+            <p className="step-title">Describe your impulse</p>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What were you tempted to do?"
+                autoFocus
+              />
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="modal-step">
+            <p className="step-title">Was this impulse positive or negative?</p>
+            <div className="type-btn-group">
+              <button
+                className={`type-btn positive ${
+                  impulseType === "positive" ? "selected" : ""
+                }`}
+                onClick={() => setImpulseType("positive")}
+              >
+                <span className="type-btn-icon">&#9650;</span>
+                <span className="type-btn-label">Positive</span>
+                <span className="type-btn-desc">
+                  Would help your goal
+                </span>
+              </button>
+              <button
+                className={`type-btn negative ${
+                  impulseType === "negative" ? "selected" : ""
+                }`}
+                onClick={() => setImpulseType("negative")}
+              >
+                <span className="type-btn-icon">&#9660;</span>
+                <span className="type-btn-label">Negative</span>
+                <span className="type-btn-desc">
+                  Would hurt your goal
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="modal-step">
+            <p className="step-title">Did you act on this impulse?</p>
+            <div className="acted-toggle">
+              <div className="toggle-switch-wrapper">
+                <span className={`toggle-label ${!actedOn ? "active" : ""}`}>
+                  No
+                </span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={actedOn}
+                    onChange={(e) => setActedOn(e.target.checked)}
+                  />
+                  <span className="toggle-slider" />
+                </label>
+                <span className={`toggle-label ${actedOn ? "active" : ""}`}>
+                  Yes
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="step-nav">
+          {step > 0 && (
+            <button
+              className="btn secondary"
+              onClick={() => setStep(step - 1)}
+            >
+              Back
+            </button>
+          )}
+          {step < 3 ? (
+            <button
+              className="btn primary"
+              disabled={!canAdvance()}
+              onClick={() => setStep(step + 1)}
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              className="btn primary"
+              disabled={saving}
+              onClick={handleSubmit}
+            >
+              {saving ? "Saving..." : "Log Impulse"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function isGood(impulse) {
+  const positive = impulse.impulse_type === "positive";
+  return (positive && impulse.acted_on) || (!positive && !impulse.acted_on);
 }
 
 export default function Home() {
-  const navigate = useNavigate();
-  const [budgets, setBudgets] = useState([]);
-  const [spentMap, setSpentMap] = useState({});
-  const [debtMap, setDebtMap] = useState({});
-  const [mainGoal, setMainGoal] = useState(null);
+  const [goals, setGoals] = useState([]);
+  const [impulses, setImpulses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [viewPeriod, setViewPeriod] = useState(
-    () => localStorage.getItem("viewPeriod") || "fortnightly"
-  );
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const fetchData = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
-      const { data: budgetsData, error: budgetsError } = await supabase
-        .from("budgets")
-        .select("*")
-        .order("name");
-
-      if (budgetsError) throw budgetsError;
-      if (!budgetsData) {
-        setLoading(false);
-        return;
-      }
-
-      setBudgets(budgetsData);
-
-      const spendingBudgets = budgetsData.filter((b) => b.type !== "subscription");
-
-      if (spendingBudgets.length === 0) {
-        setSpentMap({});
-        setDebtMap({});
-        setLoading(false);
-        return;
-      }
-
-      // Fetch ALL transactions for spending budgets (needed for debt computation)
-      const { data: allTx, error: txError } = await supabase
-        .from("transactions")
-        .select("budget_id, amount, occurred_at, note")
-        .in("budget_id", spendingBudgets.map((b) => b.id));
-
-      if (txError) throw txError;
-
-      // Group by budget, only counting transactions within each budget's own period
-      const newSpentMap = {};
-      const periodStarts = {};
-      const periodEnds = {};
-      for (const b of spendingBudgets) {
-        const ps = getPeriodStart(b.period, b.renew_anchor);
-        periodStarts[b.id] = ps.getTime();
-        periodEnds[b.id] = stepPeriod(b.period, ps, "next").getTime();
-        newSpentMap[b.id] = 0;
-      }
-      for (const t of allTx || []) {
-        const ps = periodStarts[t.budget_id];
-        const pe = periodEnds[t.budget_id];
-        const txTime = new Date(t.occurred_at).getTime();
-        if (ps != null && txTime >= ps && txTime < pe) {
-          newSpentMap[t.budget_id] += t.amount;
-        }
-      }
-
-      // Compute carried debt per budget
-      const newDebtMap = {};
-      for (const b of spendingBudgets) {
-        const budgetTx = (allTx || []).filter((t) => t.budget_id === b.id);
-        newDebtMap[b.id] = computeCarriedDebt(b, budgetTx);
-      }
-
-      setSpentMap(newSpentMap);
-      setDebtMap(newDebtMap);
-
-      // Fetch goals and run leftover collection + auto-contributions
-      const { data: goalsData } = await supabase
-        .from("goals")
-        .select("*")
-        .order("sort_order");
-
-      if (goalsData && goalsData.length > 0) {
-        await collectLeftovers(supabase, budgetsData, allTx || [], goalsData);
-        await processContributions(supabase, goalsData);
-        // Re-fetch goals after processing to get updated saved_amount
-        const { data: updatedGoals } = await supabase
-          .from("goals")
-          .select("*")
-          .order("sort_order");
-        setMainGoal(updatedGoals?.[0] || null);
-      } else {
-        setMainGoal(null);
-      }
-
+      const [goalsData, impulsesData] = await Promise.all([
+        fetchGoals(),
+        fetchTodayImpulses(),
+      ]);
+      setGoals(goalsData);
+      setImpulses(impulsesData);
       setError(null);
     } catch (err) {
       setError(err.message || "Failed to load data");
@@ -117,8 +227,18 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    loadData();
+  }, [loadData]);
+
+  async function handleDelete(id) {
+    try {
+      await deleteImpulse(id);
+      setConfirmDelete(null);
+      await loadData();
+    } catch (err) {
+      setError(err.message || "Failed to delete");
+    }
+  }
 
   if (loading) return <Loading />;
 
@@ -127,7 +247,11 @@ export default function Home() {
       <div className="page home-page">
         <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
           <p className="form-error">{error}</p>
-          <button className="btn primary" onClick={fetchData} style={{ marginTop: "1rem" }}>
+          <button
+            className="btn primary"
+            onClick={loadData}
+            style={{ marginTop: "1rem" }}
+          >
             Retry
           </button>
         </div>
@@ -135,152 +259,100 @@ export default function Home() {
     );
   }
 
-  const subscriptions = budgets.filter((b) => b.type === "subscription");
-  const spendingBudgets = budgets.filter((b) => b.type !== "subscription");
-
-  const totalSubscriptions = subscriptions.reduce(
-    (s, b) => s + normalize(b.goal_amount, b.period, viewPeriod), 0
-  );
-  const totalBudget = spendingBudgets.reduce(
-    (s, b) => s + normalize(b.goal_amount, b.period, viewPeriod), 0
-  );
-  const totalSpent = spendingBudgets.reduce(
-    (s, b) => s + (spentMap[b.id] || 0), 0
-  );
-  const totalDebt = spendingBudgets.reduce(
-    (s, b) => s + (debtMap[b.id] || 0), 0
-  );
-  const totalRemaining = totalBudget - totalSpent + totalDebt;
-
-  const handleViewPeriodChange = (e) => {
-    setViewPeriod(e.target.value);
-    localStorage.setItem("viewPeriod", e.target.value);
-  };
-
-  const hasAny = budgets.length > 0;
-  const hasSpending = spendingBudgets.length > 0;
+  const hasGoals = goals.length > 0;
+  const { good, bad } = computeScores(impulses);
 
   return (
     <div className="page home-page">
       <button
-        className={`spend-btn${!hasSpending ? " disabled" : ""}`}
-        onClick={() => hasSpending && setShowModal(true)}
-        disabled={!hasSpending}
+        className={`impulse-btn${!hasGoals ? " disabled" : ""}`}
+        onClick={() => hasGoals && setShowModal(true)}
+        disabled={!hasGoals}
       >
-        <span className="spend-btn-icon-ring">
-          <span className="spend-btn-icon">+</span>
+        <span className="impulse-btn-icon-ring">
+          <span className="impulse-btn-icon">+</span>
         </span>
-        <span className="spend-btn-text">I Spent</span>
+        <span className="impulse-btn-text">Log Impulse</span>
       </button>
 
-      <div className="card summary-card">
-        <div className="summary-card-header">
-          <select className="period-select" value={viewPeriod} onChange={handleViewPeriodChange}>
-            {VIEW_PERIODS.map((p) => (
-              <option key={p} value={p}>{VIEW_LABELS[p]}</option>
-            ))}
-          </select>
+      <div className="score-display">
+        <div className="score-item">
+          <span className="score-arrow green">&#9650;</span>
+          <span className="score-count green">{good}</span>
         </div>
-        <div className="summary-bar summary-bar-4">
-          <div className="summary-item">
-            <span className="summary-label">Subscriptions</span>
-            <span className="summary-value">${totalSubscriptions.toFixed(2)}</span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Budget</span>
-            <span className="summary-value">${totalBudget.toFixed(2)}</span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Spent</span>
-            <span className="summary-value">${totalSpent.toFixed(2)}</span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Remaining</span>
-            <span
-              className={`summary-value ${totalRemaining >= 0 ? "positive" : "negative"}`}
-            >
-              ${totalRemaining.toFixed(2)}
-            </span>
-          </div>
+        <div className="score-item">
+          <span className="score-arrow red">&#9660;</span>
+          <span className="score-count red">{bad}</span>
         </div>
       </div>
 
-      {!hasAny ? (
+      {!hasGoals && (
         <div className="empty-state card">
-          <p>No budgets yet. Head to the Budgets page to create one.</p>
+          <p>No goals yet. Head to the Goals tab to create one, then start tracking your impulses.</p>
         </div>
-      ) : (
-        <>
-          {hasSpending && (
-            <AffordCheckCard budgets={spendingBudgets} spentMap={spentMap} debtMap={debtMap} mainGoal={mainGoal} />
-          )}
+      )}
 
-          {hasSpending && (
-            <div className="budget-grid">
-              {spendingBudgets.map((budget) => (
-                <BudgetCard
-                  key={budget.id}
-                  budget={budget}
-                  spent={spentMap[budget.id] || 0}
-                  carriedDebt={debtMap[budget.id] || 0}
-                />
-              ))}
-            </div>
-          )}
-
-          {subscriptions.length > 0 && (
-            <div className="card subscription-section">
-              <div className="subscription-header">
-                <h3 className="subscription-section-title">Subscriptions</h3>
-                <span className="subscription-total">
-                  ${totalSubscriptions.toFixed(2)}
-                  <span className="subscription-total-label"> / </span>
-                  <select className="period-select" value={viewPeriod} onChange={handleViewPeriodChange}>
-                    {VIEW_PERIODS.map((p) => (
-                      <option key={p} value={p}>{VIEW_LABELS[p].toLowerCase()}</option>
-                    ))}
-                  </select>
-                </span>
-              </div>
-              {subscriptions.map((sub) => {
-                const norm = normalize(sub.goal_amount, sub.period, viewPeriod);
-                const isSamePeriod = sub.period === viewPeriod;
-                return (
-                  <div
-                    key={sub.id}
-                    className="subscription-row"
-                    onClick={() => navigate(`/budget/${sub.id}`)}
-                  >
-                    <div className="subscription-row-left">
-                      <span className="subscription-name">{sub.name}</span>
-                      <span className="period-badge">{getPeriodLabel(sub.period)}</span>
-                    </div>
-                    <div className="subscription-row-right">
-                      <span className="subscription-amount">
-                        ${sub.goal_amount.toFixed(2)}
+      {impulses.length > 0 && (
+        <div className="today-impulses">
+          <h3 className="section-title">
+            <span>Today</span>
+            <span className="today-count">{impulses.length} impulse{impulses.length !== 1 ? "s" : ""}</span>
+          </h3>
+          <div className="impulse-list">
+            {impulses.map((imp) => {
+              const good = isGood(imp);
+              const goalTitle = imp.impulse_goals?.title || "Unknown";
+              return (
+                <div key={imp.id} className="card impulse-item">
+                  <div className={`impulse-type-indicator ${good ? "good" : "bad"}`} />
+                  <div className="impulse-item-content">
+                    <div className="impulse-item-desc">{imp.description}</div>
+                    <div className="impulse-item-meta">
+                      <span>{goalTitle}</span>
+                      <span>&middot;</span>
+                      <span>{imp.impulse_type === "positive" ? "Positive" : "Negative"}</span>
+                      <span className={`impulse-item-tag ${imp.acted_on ? "acted" : "resisted"}`}>
+                        {imp.acted_on ? "Acted" : "Resisted"}
                       </span>
-                      {!isSamePeriod && (
-                        <span className="subscription-fn-amount">
-                          ${norm.toFixed(2)}/{VIEW_LABELS[viewPeriod].toLowerCase().slice(0, 2)}
-                        </span>
-                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </>
+                  <div className="impulse-item-actions">
+                    {confirmDelete === imp.id ? (
+                      <div className="goal-delete-confirm">
+                        <button
+                          className="btn small danger"
+                          onClick={() => handleDelete(imp.id)}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          className="btn small"
+                          onClick={() => setConfirmDelete(null)}
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="btn small danger"
+                        onClick={() => setConfirmDelete(imp.id)}
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {showModal && (
-        <AddTransactionModal
-          budgets={spendingBudgets}
-          spentMap={spentMap}
-          debtMap={debtMap}
-          mainGoal={mainGoal}
+        <LogImpulseModal
+          goals={goals}
           onClose={() => setShowModal(false)}
-          onAdded={fetchData}
+          onLogged={loadData}
         />
       )}
     </div>
