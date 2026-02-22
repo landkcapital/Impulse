@@ -18,6 +18,7 @@ export default function Goals() {
   const [title, setTitle] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [lightboxGoal, setLightboxGoal] = useState(null);
 
   const loadGoals = useCallback(async () => {
     try {
@@ -189,7 +190,8 @@ export default function Goals() {
                   <img
                     src={goal.image_url}
                     alt={goal.title}
-                    className="goal-card-image"
+                    className="goal-card-image clickable"
+                    onClick={() => setLightboxGoal(goal)}
                   />
                 ) : (
                   <div className="goal-card-placeholder">&#9733;</div>
@@ -236,6 +238,25 @@ export default function Goals() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {lightboxGoal && (
+        <div className="lightbox-overlay" onClick={() => setLightboxGoal(null)}>
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={lightboxGoal.image_url}
+              alt={lightboxGoal.title}
+              className="lightbox-image"
+            />
+            <h3 className="lightbox-title">{lightboxGoal.title}</h3>
+            <button
+              className="lightbox-close"
+              onClick={() => setLightboxGoal(null)}
+            >
+              &times;
+            </button>
+          </div>
         </div>
       )}
     </div>
