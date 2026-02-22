@@ -1114,6 +1114,19 @@ main {
   margin-bottom: 0.2rem;
 }
 
+.impulse-item-notes {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 0.3rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--bg);
+  border-radius: var(--radius-xs);
+  border-left: 3px solid var(--accent);
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
 .impulse-item-meta {
   font-size: 0.75rem;
   color: var(--text-dim);

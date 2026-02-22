@@ -74,31 +74,36 @@ export async function logImpulse({
   description,
   impulseType,
   actedOn,
+  notes,
 }) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const payload = {
+    user_id: user.id,
+    goal_id: goalId,
+    description,
+    impulse_type: impulseType,
+    acted_on: actedOn,
+  };
+  if (notes && notes.trim()) payload.notes = notes.trim();
+
   const { data, error } = await supabase
     .from("impulses")
-    .insert({
-      user_id: user.id,
-      goal_id: goalId,
-      description,
-      impulse_type: impulseType,
-      acted_on: actedOn,
-    })
+    .insert(payload)
     .select()
     .single();
   if (error) throw error;
   return data;
 }
 
-export async function updateImpulse(id, { description, impulseType, actedOn }) {
+export async function updateImpulse(id, { description, impulseType, actedOn, notes }) {
   const payload = {};
   if (description !== undefined) payload.description = description;
   if (impulseType !== undefined) payload.impulse_type = impulseType;
   if (actedOn !== undefined) payload.acted_on = actedOn;
+  if (notes !== undefined) payload.notes = notes || null;
 
   const { error } = await supabase.from("impulses").update(payload).eq("id", id);
   if (error) throw error;

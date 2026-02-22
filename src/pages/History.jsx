@@ -48,6 +48,7 @@ export default function History() {
   const [editDesc, setEditDesc] = useState("");
   const [editType, setEditType] = useState("");
   const [editActed, setEditActed] = useState(false);
+  const [editNotes, setEditNotes] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const { start, end } = getWeekRange(refDate);
@@ -90,6 +91,7 @@ export default function History() {
     setEditDesc(imp.description);
     setEditType(imp.impulse_type);
     setEditActed(imp.acted_on);
+    setEditNotes(imp.notes || "");
   }
 
   async function handleSaveEdit() {
@@ -98,6 +100,7 @@ export default function History() {
         description: editDesc.trim(),
         impulseType: editType,
         actedOn: editActed,
+        notes: editNotes.trim(),
       });
       setEditingId(null);
       await loadData();
@@ -269,6 +272,15 @@ export default function History() {
                             Acted on it
                           </label>
                         </div>
+                        <div className="form-group" style={{ marginBottom: "0.5rem" }}>
+                          <label>Reflection Note</label>
+                          <textarea
+                            value={editNotes}
+                            onChange={(e) => setEditNotes(e.target.value)}
+                            rows={3}
+                            placeholder="Add a reflection..."
+                          />
+                        </div>
                         <div className="form-actions">
                           <button className="btn primary" onClick={handleSaveEdit}>
                             Save
@@ -292,6 +304,9 @@ export default function History() {
                     />
                     <div className="impulse-item-content">
                       <div className="impulse-item-desc">{imp.description}</div>
+                      {imp.notes && (
+                        <div className="impulse-item-notes">{imp.notes}</div>
+                      )}
                       <div className="impulse-item-meta">
                         <span>{goalTitle}</span>
                         <span>&middot;</span>

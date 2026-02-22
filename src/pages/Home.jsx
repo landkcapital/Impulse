@@ -3,6 +3,7 @@ import {
   fetchGoals,
   fetchTodayImpulses,
   logImpulse,
+  updateImpulse,
   deleteImpulse,
   computeScores,
 } from "../lib/impulses";
@@ -14,10 +15,11 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
   const [description, setDescription] = useState("");
   const [impulseType, setImpulseType] = useState(null);
   const [actedOn, setActedOn] = useState(false);
+  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const steps = ["goal", "describe", "type", "acted"];
+  const steps = ["goal", "describe", "type", "acted", "notes"];
 
   async function handleSubmit() {
     setSaving(true);
@@ -28,6 +30,7 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
         description: description.trim(),
         impulseType,
         actedOn,
+        notes: notes.trim(),
       });
       onLogged();
       onClose();
@@ -165,6 +168,21 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
           </div>
         )}
 
+        {step === 4 && (
+          <div className="modal-step">
+            <p className="step-title">Add a reflection note (optional)</p>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="How did you feel? What triggered this? What would you do differently?"
+                autoFocus
+                rows={4}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="step-nav">
           {step > 0 && (
             <button
@@ -174,7 +192,7 @@ function LogImpulseModal({ goals, onClose, onLogged }) {
               Back
             </button>
           )}
-          {step < 3 ? (
+          {step < 4 ? (
             <button
               className="btn primary"
               disabled={!canAdvance()}
@@ -209,6 +227,11 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editDesc, setEditDesc] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editActed, setEditActed] = useState(false);
+  const [editNotes, setEditNotes] = useState("");
 
   const loadData = useCallback(async () => {
     try {
@@ -229,6 +252,29 @@ export default function Home() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  function startEdit(imp) {
+    setEditingId(imp.id);
+    setEditDesc(imp.description);
+    setEditType(imp.impulse_type);
+    setEditActed(imp.acted_on);
+    setEditNotes(imp.notes || "");
+  }
+
+  async function handleSaveEdit() {
+    try {
+      await updateImpulse(editingId, {
+        description: editDesc.trim(),
+        impulseType: editType,
+        actedOn: editActed,
+        notes: editNotes.trim(),
+      });
+      setEditingId(null);
+      await loadData();
+    } catch (err) {
+      setError(err.message || "Failed to update");
+    }
+  }
 
   async function handleDelete(id) {
     try {
@@ -302,11 +348,73 @@ export default function Home() {
             {impulses.map((imp) => {
               const good = isGood(imp);
               const goalTitle = imp.impulse_goals?.title || "Unknown";
+
+              if (editingId === imp.id) {
+                return (
+                  <div key={imp.id} className="card" style={{ padding: "1rem" }}>
+                    <div className="edit-impulse-form">
+                      <div className="form-group" style={{ marginBottom: "0.5rem" }}>
+                        <label>Description</label>
+                        <textarea
+                          value={editDesc}
+                          onChange={(e) => setEditDesc(e.target.value)}
+                          rows={2}
+                        />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: "0.5rem" }}>
+                        <label>Type</label>
+                        <select
+                          value={editType}
+                          onChange={(e) => setEditType(e.target.value)}
+                        >
+                          <option value="positive">Positive</option>
+                          <option value="negative">Negative</option>
+                        </select>
+                      </div>
+                      <div className="form-group" style={{ marginBottom: "0.5rem" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", textTransform: "none", letterSpacing: "normal" }}>
+                          <input
+                            type="checkbox"
+                            checked={editActed}
+                            onChange={(e) => setEditActed(e.target.checked)}
+                            style={{ width: "auto" }}
+                          />
+                          Acted on it
+                        </label>
+                      </div>
+                      <div className="form-group" style={{ marginBottom: "0.5rem" }}>
+                        <label>Reflection Note</label>
+                        <textarea
+                          value={editNotes}
+                          onChange={(e) => setEditNotes(e.target.value)}
+                          rows={3}
+                          placeholder="Add a reflection..."
+                        />
+                      </div>
+                      <div className="form-actions">
+                        <button className="btn primary" onClick={handleSaveEdit}>
+                          Save
+                        </button>
+                        <button
+                          className="btn secondary"
+                          onClick={() => setEditingId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={imp.id} className="card impulse-item">
                   <div className={`impulse-type-indicator ${good ? "good" : "bad"}`} />
                   <div className="impulse-item-content">
                     <div className="impulse-item-desc">{imp.description}</div>
+                    {imp.notes && (
+                      <div className="impulse-item-notes">{imp.notes}</div>
+                    )}
                     <div className="impulse-item-meta">
                       <span>{goalTitle}</span>
                       <span>&middot;</span>
@@ -317,6 +425,12 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="impulse-item-actions">
+                    <button
+                      className="btn small secondary"
+                      onClick={() => startEdit(imp)}
+                    >
+                      Edit
+                    </button>
                     {confirmDelete === imp.id ? (
                       <div className="goal-delete-confirm">
                         <button
