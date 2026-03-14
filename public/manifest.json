@@ -1,7 +1,7 @@
 {
-  "name": "Impulse",
-  "short_name": "Impulse",
-  "description": "Track your impulses. Master your goals.",
+  "name": "Penta",
+  "short_name": "Penta",
+  "description": "Balance your time across the five pillars of life.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f5f5fa",
