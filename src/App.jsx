@@ -12,6 +12,13 @@ import Goals from "./pages/Goals";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
 import Account from "./pages/Account";
+import {
+  PentaHomeScreen,
+  PentaLogBlockScreen,
+  PentaReviewScreen,
+  PentaInsightsScreen,
+  PentaSettingsScreen,
+} from "./features/penta/screens";
 import "./styles.css";
 
 function ProtectedRoute({ session, ready, children }) {
@@ -119,6 +126,47 @@ export default function App() {
             element={
               <ProtectedRoute session={session} ready={ready}>
                 <Account />
+              </ProtectedRoute>
+            }
+          />
+          {/* Penta routes */}
+          <Route
+            path="/penta"
+            element={
+              <ProtectedRoute session={session} ready={ready}>
+                <PentaHomeScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/penta/log"
+            element={
+              <ProtectedRoute session={session} ready={ready}>
+                <PentaLogBlockScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/penta/review"
+            element={
+              <ProtectedRoute session={session} ready={ready}>
+                <PentaReviewScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/penta/insights"
+            element={
+              <ProtectedRoute session={session} ready={ready}>
+                <PentaInsightsScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/penta/settings"
+            element={
+              <ProtectedRoute session={session} ready={ready}>
+                <PentaSettingsScreen />
               </ProtectedRoute>
             }
           />
