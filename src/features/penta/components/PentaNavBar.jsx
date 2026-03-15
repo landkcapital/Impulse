@@ -89,6 +89,24 @@ export default function PentaNavBar() {
           );
         })}
       </div>
+
+      {/* Account — far right on desktop, included in bottom bar on mobile */}
+      <button
+        className={`penta-navbar-item penta-navbar-account ${location.pathname === "/account" ? "active" : ""}`}
+        onClick={() => {
+          if (location.pathname !== "/account") navigate("/account");
+        }}
+        aria-label="Account"
+        aria-current={location.pathname === "/account" ? "page" : undefined}
+      >
+        <span className="penta-navbar-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="10" cy="7" r="3.5" />
+            <path d="M3.5 17.5c0-3.5 2.9-5.5 6.5-5.5s6.5 2 6.5 5.5" />
+          </svg>
+        </span>
+        <span className="penta-navbar-label">Account</span>
+      </button>
     </nav>
   );
 }

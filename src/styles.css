@@ -3214,6 +3214,24 @@ main {
     font-weight: 600;
   }
 
+  .penta-navbar-account {
+    margin-left: auto;
+    color: var(--text-dim);
+  }
+
+  .penta-navbar-account .penta-navbar-label {
+    color: var(--text-dim);
+  }
+
+  .penta-navbar-account:hover .penta-navbar-label {
+    color: var(--text);
+  }
+
+  .penta-navbar-account.active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
   .penta-page-with-nav {
     padding-bottom: 2rem !important;
     padding-top: 4.5rem !important;
@@ -3952,6 +3970,106 @@ main {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ===== Penta Account Screen ===== */
+
+.penta-acct-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.penta-acct-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.penta-acct-row:last-child {
+  border-bottom: none;
+}
+
+.penta-acct-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.penta-acct-value {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.penta-acct-uid {
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.penta-acct-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin: 1.25rem 0 0.4rem;
+}
+
+.penta-acct-action {
+  width: 100%;
+  padding: 0.85rem 1.1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--accent);
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.penta-acct-action:hover {
+  background: var(--glow);
+}
+
+.penta-acct-action-danger {
+  color: var(--red);
+}
+
+.penta-acct-action-danger:hover {
+  background: var(--red-glow);
+}
+
+.penta-acct-danger-label {
+  color: var(--red);
+}
+
+.penta-acct-danger {
+  border: 1px solid rgba(220, 38, 38, 0.15);
+}
+
+.penta-acct-confirm {
+  padding: 1rem 1.1rem;
+}
+
+.penta-acct-confirm-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.penta-acct-confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.penta-acct-btn-danger {
+  background: var(--red) !important;
+  color: #fff !important;
+  border: none !important;
 }
 
 /* ===== Prevent horizontal overflow ===== */
