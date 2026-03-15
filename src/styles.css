@@ -4073,6 +4073,342 @@ main {
   border: none !important;
 }
 
+/* ===== Penta Business Screen ===== */
+
+.penta-biz-overview {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.penta-biz-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.85rem 0.5rem;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.penta-biz-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.penta-biz-stat-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.penta-biz-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.penta-biz-role {
+  padding: 0;
+  overflow: hidden;
+}
+
+.penta-biz-role-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.penta-biz-role-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.penta-biz-role-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.penta-biz-role-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  display: block;
+}
+
+.penta-biz-role-desc {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  display: block;
+  margin-top: 0.1rem;
+}
+
+.penta-biz-role-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.penta-biz-role-count {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.penta-biz-role-chevron {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  transition: transform 0.2s;
+}
+
+.penta-biz-role-chevron.open {
+  transform: rotate(180deg);
+}
+
+.penta-biz-role-body {
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 1rem 0.75rem;
+}
+
+.penta-biz-task-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.penta-biz-task {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.penta-biz-task:last-child {
+  border-bottom: none;
+}
+
+.penta-biz-task.done {
+  opacity: 0.45;
+}
+
+.penta-biz-task-check {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.penta-biz-task-title {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.penta-biz-task.done .penta-biz-task-title {
+  text-decoration: line-through;
+}
+
+.penta-biz-task-due {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.penta-biz-task-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-dim);
+  padding: 0.15rem 0.25rem;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.penta-biz-task:hover .penta-biz-task-delete {
+  opacity: 1;
+}
+
+.penta-biz-task-add {
+  margin-top: 0.35rem;
+}
+
+.penta-biz-task-input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.penta-biz-task-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--glow);
+}
+
+.penta-biz-completed {
+  margin-top: 0.5rem;
+}
+
+.penta-biz-completed-summary {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.3rem 0;
+}
+
+.penta-biz-role-remove {
+  display: block;
+  margin-top: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-family: inherit;
+  padding: 0.25rem 0;
+}
+
+.penta-biz-role-remove:hover {
+  color: var(--red);
+}
+
+.penta-biz-add-role-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.penta-biz-add-role-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--glow);
+}
+
+.penta-biz-add-role {
+  padding: 1rem;
+}
+
+.penta-biz-add-input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.penta-biz-add-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--glow);
+}
+
+.penta-biz-colour-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.penta-biz-colour-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.penta-biz-colour-dot.selected {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text);
+}
+
+.penta-biz-add-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.penta-biz-setup {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.penta-biz-setup-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
+.penta-biz-setup-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.penta-biz-setup-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+  margin-bottom: 0.5rem;
+}
+
+.penta-biz-setup-role {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border-radius: var(--radius-xs);
+}
+
+.penta-biz-setup-role-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  display: block;
+}
+
+.penta-biz-setup-role-desc {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  display: block;
+}
+
 /* ===== Prevent horizontal overflow ===== */
 html, body {
   overflow-x: hidden;

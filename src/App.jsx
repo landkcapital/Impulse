@@ -18,6 +18,7 @@ import {
   PentaInsightsScreen,
   PentaSettingsScreen,
   PentaAccountScreen,
+  PentaBusinessScreen,
 } from "./features/penta/screens";
 import "./styles.css";
 
@@ -132,6 +133,14 @@ export default function App() {
             element={
               <ProtectedRoute session={session} ready={ready}>
                 <PentaSettingsScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/business"
+            element={
+              <ProtectedRoute session={session} ready={ready}>
+                <PentaBusinessScreen />
               </ProtectedRoute>
             }
           />

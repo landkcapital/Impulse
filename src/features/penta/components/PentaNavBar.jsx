@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { path: "/todos", label: "To Do", icon: "todos" },
   { path: "/review", label: "History", icon: "review" },
   { path: "/insights", label: "Insights", icon: "insights" },
+  { path: "/business", label: "Business", icon: "business" },
   { path: "/settings", label: "Settings", icon: "settings" },
 ];
 
@@ -43,6 +44,14 @@ function NavIcon({ icon }) {
       return (
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M10 2L12.5 7.5L18 8.5L14 12.5L15 18L10 15.5L5 18L6 12.5L2 8.5L7.5 7.5L10 2z" />
+        </svg>
+      );
+    case "business":
+      return (
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="7" width="14" height="10" rx="1.5" />
+          <path d="M7 7V5a3 3 0 016 0v2" />
+          <circle cx="10" cy="12.5" r="1.5" />
         </svg>
       );
     case "settings":

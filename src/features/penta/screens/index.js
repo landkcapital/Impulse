@@ -5,3 +5,4 @@ export { default as PentaReviewScreen } from "./PentaReviewScreen";
 export { default as PentaInsightsScreen } from "./PentaInsightsScreen";
 export { default as PentaSettingsScreen } from "./PentaSettingsScreen";
 export { default as PentaAccountScreen } from "./PentaAccountScreen";
+export { default as PentaBusinessScreen } from "./PentaBusinessScreen";
