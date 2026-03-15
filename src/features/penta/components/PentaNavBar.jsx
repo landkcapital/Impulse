@@ -63,23 +63,32 @@ export default function PentaNavBar() {
 
   return (
     <nav className="penta-navbar">
-      {NAV_ITEMS.map((item) => {
-        const active = location.pathname === item.path;
-        return (
-          <button
-            key={item.path}
-            className={`penta-navbar-item ${active ? "active" : ""}`}
-            onClick={() => {
-              if (!active) navigate(item.path);
-            }}
-            aria-label={item.label}
-            aria-current={active ? "page" : undefined}
-          >
-            <NavIcon icon={item.icon} />
-            <span className="penta-navbar-label">{item.label}</span>
-          </button>
-        );
-      })}
+      {/* Brand — desktop only */}
+      <span className="penta-navbar-brand" onClick={() => navigate("/")}>
+        Penta
+      </span>
+
+      <div className="penta-navbar-links">
+        {NAV_ITEMS.map((item) => {
+          const active = location.pathname === item.path;
+          return (
+            <button
+              key={item.path}
+              className={`penta-navbar-item ${active ? "active" : ""}`}
+              onClick={() => {
+                if (!active) navigate(item.path);
+              }}
+              aria-label={item.label}
+              aria-current={active ? "page" : undefined}
+            >
+              <span className="penta-navbar-icon">
+                <NavIcon icon={item.icon} />
+              </span>
+              <span className="penta-navbar-label">{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }

@@ -138,6 +138,13 @@ body {
   padding: 2rem 1.5rem 6rem;
 }
 
+@media (min-width: 768px) {
+  .page {
+    max-width: 1080px;
+    padding: 2rem 2.5rem 4rem;
+  }
+}
+
 main {
   min-height: calc(100vh - 61px);
 }
@@ -3089,6 +3096,18 @@ main {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
 }
 
+.penta-navbar-brand {
+  display: none;
+}
+
+.penta-navbar-links {
+  display: contents;
+}
+
+.penta-navbar-icon {
+  display: flex;
+}
+
 .penta-navbar-item {
   display: flex;
   flex-direction: column;
@@ -3126,44 +3145,78 @@ main {
   padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)) !important;
 }
 
-/* Desktop: top nav */
+/* Desktop: ZeroLine-style top nav */
 @media (min-width: 768px) {
   .penta-navbar {
     position: fixed;
     top: 0;
     bottom: auto;
+    left: 0;
+    right: 0;
     border-top: none;
     border-bottom: 1px solid var(--border);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    padding: 0.5rem 1rem;
-    justify-content: center;
-    gap: 0.25rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    padding: 0 2rem;
+    justify-content: space-between;
+    height: 56px;
+    background: var(--bg-surface);
+  }
+
+  .penta-navbar-brand {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--accent);
+    cursor: pointer;
+    letter-spacing: -0.02em;
+    flex-shrink: 0;
+  }
+
+  .penta-navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .penta-navbar-icon {
+    display: none;
   }
 
   .penta-navbar-item {
     flex-direction: row;
-    gap: 0.4rem;
-    padding: 0.5rem 1rem;
+    gap: 0;
+    padding: 0.45rem 1rem;
     min-width: auto;
     min-height: auto;
-    border-radius: var(--radius-sm);
+    border-radius: 20px;
+    color: var(--text-muted);
+    font-weight: 500;
   }
 
   .penta-navbar-item:hover {
-    background: var(--glow);
+    color: var(--text);
   }
 
   .penta-navbar-item.active {
-    background: var(--glow);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    background: transparent;
   }
 
   .penta-navbar-label {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .penta-navbar-item.active .penta-navbar-label {
+    font-weight: 600;
   }
 
   .penta-page-with-nav {
-    padding-bottom: 1.5rem !important;
-    padding-top: 4rem !important;
+    padding-bottom: 2rem !important;
+    padding-top: 4.5rem !important;
   }
 }
 
