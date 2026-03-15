@@ -439,50 +439,7 @@ export default function PentaLogBlockScreen() {
         )}
       </div>
 
-      {/* Point allocation (only show when split) */}
-      {useSecondPillar && secondPillarId && (
-        <div className="card penta-log-section">
-          <label className="penta-log-label">
-            Point split ({totalPoints} total)
-          </label>
-          <div className="penta-log-points-row">
-            <div className="penta-log-points-field">
-              <span
-                className="penta-log-pillar-dot"
-                style={{ backgroundColor: selectedPrimary?.colour }}
-              />
-              <span className="penta-log-points-name">
-                {selectedPrimary?.name}
-              </span>
-              <input
-                type="number"
-                className="penta-log-points-input"
-                value={primaryPoints}
-                onChange={(e) => handlePrimaryPointsChange(e.target.value)}
-                min={0}
-                max={totalPoints}
-              />
-            </div>
-            <div className="penta-log-points-field">
-              <span
-                className="penta-log-pillar-dot"
-                style={{ backgroundColor: selectedSecond?.colour }}
-              />
-              <span className="penta-log-points-name">
-                {selectedSecond?.name}
-              </span>
-              <input
-                type="number"
-                className="penta-log-points-input"
-                value={secondPoints}
-                onChange={(e) => handleSecondPointsChange(e.target.value)}
-                min={0}
-                max={totalPoints}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Points auto-split evenly when two pillars selected */}
 
       {/* Task linking */}
       {tasks.length > 0 && (
