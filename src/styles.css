@@ -4157,6 +4157,80 @@ main {
   border-radius: 4px;
 }
 
+.penta-biz-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.penta-biz-prompts-intro {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.penta-biz-prompt-card {
+  padding: 0.75rem 1rem;
+}
+.penta-biz-prompt-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+.penta-biz-prompt-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.penta-biz-prompt-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.penta-biz-prompt-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.penta-biz-prompt-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.penta-biz-prompt-copy {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.penta-biz-prompt-copy:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.penta-biz-prompt-copy.copied {
+  background: var(--gradient-btn);
+  color: #fff;
+  border-color: transparent;
+}
+.penta-biz-prompt-text {
+  margin: 0.6rem 0 0;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg, #f5f5f5);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border: 1px solid var(--border);
+}
+
 .penta-biz-top-bar {
   display: flex;
   align-items: flex-start;

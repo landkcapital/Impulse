@@ -466,6 +466,95 @@ function AddRoleForm({ onAdd }) {
   );
 }
 
+// ─── Claude Prompts ───
+const PROMPTS = [
+  {
+    title: "Morning Check-in",
+    icon: "☀️",
+    description: "Start your day — review what's done, get today's priorities",
+    prompt: `Here's what I completed yesterday. Please review my Business tab in Penta, update any tasks that are done, and tell me what to focus on today across all roles. Prioritise by deadline and urgency. If anything is overdue, flag it.`,
+  },
+  {
+    title: "Add New Tasks",
+    icon: "➕",
+    description: "Add tasks you've thought of to the right roles",
+    prompt: `Please read my current business tasks from Supabase and add the following new tasks. Assign each to the correct role and set realistic deadlines based on what's already scheduled:\n\n- [task 1]\n- [task 2]\n- [task 3]`,
+  },
+  {
+    title: "Weekly Review",
+    icon: "📊",
+    description: "Summarise your week and plan the next one",
+    prompt: `Please pull all my completed business tasks from this week, summarise what I achieved across each role, identify where I fell behind, and suggest the top priorities for next week. Also flag any deadlines I'm about to miss.`,
+  },
+  {
+    title: "Refine & Reorganise",
+    icon: "🔄",
+    description: "Clean up tasks — remove, update, and fill gaps",
+    prompt: `Please review all my pending business tasks in Supabase. Remove anything that's no longer relevant, update deadlines that have slipped, merge any duplicates, and add anything I'm missing based on what's been completed so far.`,
+  },
+  {
+    title: "Sales Outreach Prep",
+    icon: "📧",
+    description: "Prepare for contacting a specific prospect",
+    prompt: `Help me prepare for outreach to [COMPANY NAME]. Pull relevant tasks from my Sales and Biz Dev roles, draft a personalised email introducing EasyNav, and suggest talking points specific to their industry. Include our pricing advantage and free trial offer.`,
+  },
+  {
+    title: "Build Something",
+    icon: "🔨",
+    description: "Get Claude to help build a feature or fix a bug",
+    prompt: `I need to work on the following Engineer task from my business todos: [TASK NAME]. Please help me implement this. Start by reviewing the current codebase and suggesting an approach before writing any code.`,
+  },
+  {
+    title: "Legal & Compliance",
+    icon: "📋",
+    description: "Draft or review legal documents",
+    prompt: `Please help me with the following Operations task: [TASK NAME]. Draft the document ensuring it complies with Australian law (Privacy Act, APP guidelines). Make it professional but clear for non-legal readers. Include EasyNav branding details.`,
+  },
+  {
+    title: "Full Status Report",
+    icon: "📈",
+    description: "Get a complete view of where everything stands",
+    prompt: `Please pull all my business data from Supabase — every role, every pending task, every completed task with dates. Give me a full status report: what percentage of tasks are done per role, which roles are falling behind, what's overdue, and what should I prioritise this week to make the most progress.`,
+  },
+];
+
+function PromptsView() {
+  const [copied, setCopied] = useState(null);
+
+  function handleCopy(prompt, idx) {
+    navigator.clipboard.writeText(prompt).then(() => {
+      setCopied(idx);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  }
+
+  return (
+    <div className="penta-biz-prompts">
+      <div className="penta-biz-prompts-intro">
+        Copy these prompts and paste them to Claude to manage your EasyNav business tasks.
+      </div>
+      {PROMPTS.map((p, idx) => (
+        <div key={idx} className="penta-biz-prompt-card card">
+          <div className="penta-biz-prompt-header">
+            <span className="penta-biz-prompt-icon">{p.icon}</span>
+            <div className="penta-biz-prompt-info">
+              <span className="penta-biz-prompt-title">{p.title}</span>
+              <span className="penta-biz-prompt-desc">{p.description}</span>
+            </div>
+            <button
+              className={`penta-biz-prompt-copy ${copied === idx ? "copied" : ""}`}
+              onClick={() => handleCopy(p.prompt, idx)}
+            >
+              {copied === idx ? "Copied!" : "Copy"}
+            </button>
+          </div>
+          <pre className="penta-biz-prompt-text">{p.prompt}</pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Setup Screen ───
 function SetupScreen({ onSetup, loading: setupLoading }) {
   return (
@@ -591,6 +680,12 @@ export default function PentaBusinessScreen() {
             >
               By Role
             </button>
+            <button
+              className={`penta-biz-view-btn ${view === "prompts" ? "active" : ""}`}
+              onClick={() => setView("prompts")}
+            >
+              Prompts
+            </button>
           </div>
 
           {view === "focus" ? (
@@ -600,7 +695,7 @@ export default function PentaBusinessScreen() {
               onToggle={toggleTask}
               onDelete={removeTask}
             />
-          ) : (
+          ) : view === "roles" ? (
             <>
               {/* Role cards */}
               <div className="penta-biz-roles">
@@ -621,6 +716,8 @@ export default function PentaBusinessScreen() {
 
               <AddRoleForm onAdd={addRole} />
             </>
+          ) : (
+            <PromptsView />
           )}
         </>
       )}
