@@ -332,17 +332,19 @@ function QuickAddTask({ onAdd, pillars, subPillarsByPillar }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const title = value.trim();
-    if (!title || adding) return;
+    const lines = value.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0 || adding) return;
 
     setAdding(true);
     try {
-      await onAdd({
-        title,
-        isNonNegotiable: false,
-        pillarKey: selectedPillar || null,
-        workTag: selectedSubPillar || null,
-      });
+      for (const title of lines) {
+        await onAdd({
+          title,
+          isNonNegotiable: false,
+          pillarKey: selectedPillar || null,
+          workTag: selectedSubPillar || null,
+        });
+      }
       setValue("");
       setSelectedPillar(null);
       setSelectedSubPillar(null);
@@ -355,13 +357,19 @@ function QuickAddTask({ onAdd, pillars, subPillarsByPillar }) {
 
   return (
     <form className="penta-task-quick-add" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        className="penta-task-quick-input"
+      <textarea
+        className="penta-task-quick-input penta-task-quick-textarea"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Add a task for today..."
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e);
+          }
+        }}
+        placeholder="Add tasks (one per line)..."
         disabled={adding}
+        rows={2}
       />
       {pillars && pillars.length > 0 && (
         <div className="penta-quick-pillar-row">

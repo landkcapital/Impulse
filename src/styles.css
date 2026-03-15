@@ -2040,46 +2040,108 @@ main {
   margin-top: 1.25rem;
 }
 
-/* Summary items */
-.penta-log-items {
+/* Log entry cards */
+.penta-log-entry-card {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
-.penta-log-item-row {
+.penta-log-entry-header {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: space-between;
 }
-.penta-log-item-row .penta-log-summary-input {
-  flex: 1;
+.penta-log-entry-num {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  background: var(--bg-hover, #f3f4f6);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.penta-log-item-remove {
+.penta-log-entry-remove {
   background: none;
   border: none;
   color: #ef4444;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
-  flex-shrink: 0;
   line-height: 1;
 }
-.penta-log-item-remove:hover {
+.penta-log-entry-remove:hover {
   background: #fef2f2;
 }
-.penta-log-item-add {
+.penta-log-entry-pillars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.penta-log-entry-pillar {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 3px 10px;
+  border: 1.5px solid;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: transparent;
+}
+.penta-log-entry-subs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.penta-log-entry-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.penta-log-entry-photo-btn {
   background: none;
-  border: none;
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.penta-log-entry-photo-btn:hover {
+  border-color: var(--accent);
   color: var(--accent);
-  font-size: 0.8rem;
+}
+.penta-log-entry-photo-thumb {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.penta-log-entry-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.penta-log-add-entry {
+  background: none;
+  border: 2px dashed var(--border);
+  color: var(--accent);
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  padding: 0.3rem 0;
-  text-align: left;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  width: 100%;
+  text-align: center;
+  transition: border-color 0.15s;
 }
-.penta-log-item-add:hover {
-  text-decoration: underline;
+.penta-log-add-entry:hover {
+  border-color: var(--accent);
 }
 
 .penta-log-summary-input {
@@ -3254,6 +3316,11 @@ main {
 
 .penta-task-quick-input:focus {
   border-bottom-color: var(--primary, #0891a8);
+}
+.penta-task-quick-textarea {
+  resize: none;
+  font-family: inherit;
+  min-height: 2.5rem;
 }
 
 /* ===== Penta Header ===== */

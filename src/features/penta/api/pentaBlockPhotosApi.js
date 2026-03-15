@@ -9,7 +9,8 @@ export async function uploadBlockPhoto(blockId, file) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const ext = file.name?.split(".").pop() || "jpg";
+  const mimeToExt = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/heic": "heic", "image/heif": "heif" };
+  const ext = file.name?.split(".").pop() || mimeToExt[file.type] || "jpg";
   const path = `${user.id}/${blockId}/${crypto.randomUUID()}.${ext}`;
 
   const { error: uploadErr } = await supabase.storage

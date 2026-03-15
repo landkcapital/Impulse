@@ -18,6 +18,151 @@ import PentaNavBar from "../components/PentaNavBar";
 import PentaLoader from "../components/PentaLoader";
 import useSubPillars from "../hooks/useSubPillars";
 
+function makeEntry(defaultPillarId) {
+  return {
+    id: crypto.randomUUID(),
+    summary: "",
+    pillarId: defaultPillarId || "",
+    subPillarKey: "",
+    photo: null,
+  };
+}
+
+// ─── Per-entry pillar + photo picker ───
+function EntryCard({
+  entry,
+  index,
+  pillars,
+  subPillarsByPillar,
+  canRemove,
+  onChange,
+  onRemove,
+}) {
+  const fileRef = useRef(null);
+  const selectedPillar = pillars.find((p) => p.id === entry.pillarId);
+  const subs = selectedPillar
+    ? (subPillarsByPillar[selectedPillar.key] || []).filter((sp) => sp.is_active)
+    : [];
+
+  function update(field, value) {
+    onChange(entry.id, { ...entry, [field]: value });
+  }
+
+  return (
+    <div className="card penta-log-entry-card">
+      <div className="penta-log-entry-header">
+        <span className="penta-log-entry-num">{index + 1}</span>
+        {canRemove && (
+          <button
+            type="button"
+            className="penta-log-entry-remove"
+            onClick={() => onRemove(entry.id)}
+            aria-label="Remove"
+          >
+            &times;
+          </button>
+        )}
+      </div>
+
+      {/* Summary */}
+      <input
+        type="text"
+        className="penta-log-summary-input"
+        value={entry.summary}
+        onChange={(e) => update("summary", e.target.value)}
+        placeholder={index === 0 ? "What did you do?" : "Another thing you did..."}
+        autoFocus={index === 0}
+      />
+
+      {/* Compact pillar picker */}
+      <div className="penta-log-entry-pillars">
+        {pillars.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className={`penta-log-entry-pillar ${entry.pillarId === p.id ? "selected" : ""}`}
+            style={{
+              borderColor: p.colour,
+              backgroundColor: entry.pillarId === p.id ? p.colour : "transparent",
+              color: entry.pillarId === p.id ? "#fff" : p.colour,
+            }}
+            onClick={() => {
+              update("pillarId", p.id);
+              if (entry.pillarId !== p.id) update("subPillarKey", "");
+            }}
+          >
+            {p.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Sub-pillar */}
+      {subs.length > 0 && (
+        <div className="penta-log-entry-subs">
+          <button
+            type="button"
+            className={`penta-log-sub-btn ${entry.subPillarKey === "" ? "selected" : ""}`}
+            onClick={() => update("subPillarKey", "")}
+          >
+            None
+          </button>
+          {subs.map((sp) => (
+            <button
+              key={sp.key}
+              type="button"
+              className={`penta-log-sub-btn ${entry.subPillarKey === sp.key ? "selected" : ""}`}
+              style={{
+                borderColor: sp.colour || "#999",
+                color: entry.subPillarKey === sp.key ? "#fff" : (sp.colour || "#999"),
+                backgroundColor: entry.subPillarKey === sp.key ? (sp.colour || "#999") : "transparent",
+              }}
+              onClick={() => update("subPillarKey", sp.key)}
+            >
+              {sp.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Photo */}
+      <div className="penta-log-entry-photo-row">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="penta-log-file-input"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) update("photo", file);
+            e.target.value = "";
+          }}
+        />
+        {entry.photo ? (
+          <div className="penta-log-entry-photo-thumb">
+            <img src={URL.createObjectURL(entry.photo)} alt="" />
+            <button
+              type="button"
+              className="penta-log-photo-remove"
+              onClick={() => update("photo", null)}
+              aria-label="Remove photo"
+            >
+              &times;
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="penta-log-entry-photo-btn"
+            onClick={() => fileRef.current?.click()}
+          >
+            + Photo
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function PentaLogBlockScreen() {
   const navigate = useNavigate();
   const { byPillar: subPillarsByPillar } = useSubPillars();
@@ -32,20 +177,9 @@ export default function PentaLogBlockScreen() {
   // Form state
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [lockedIncrement, setLockedIncrement] = useState(null); // gap in minutes when start was last set
-  const [summaryItems, setSummaryItems] = useState([""]);
-  const summary = summaryItems.filter((s) => s.trim()).join(" · ");
+  const [lockedIncrement, setLockedIncrement] = useState(null);
+  const [entries, setEntries] = useState([]);
   const [taskId, setTaskId] = useState("");
-  const [primaryPillarId, setPrimaryPillarId] = useState("");
-  const [secondPillarId, setSecondPillarId] = useState("");
-  const [useSecondPillar, setUseSecondPillar] = useState(false);
-  const [primaryPoints, setPrimaryPoints] = useState(0);
-  const [secondPoints, setSecondPoints] = useState(0);
-  const [subPillarKey, setSubPillarKey] = useState("");
-
-  // Photos
-  const [photos, setPhotos] = useState([]);
-  const fileInputRef = useRef(null);
 
   // Save state
   const [saving, setSaving] = useState(false);
@@ -71,21 +205,14 @@ export default function PentaLogBlockScreen() {
         setPillars(active);
         setTasks(todayTasks);
 
-        // Set default time block
         const inc = prof?.increment_minutes || 15;
         const { start, end } = getDefaultBlock(inc);
         setStartTime(formatTime(start));
         setEndTime(formatTime(end));
-
-        // Default to first pillar
-        if (active.length > 0) {
-          setPrimaryPillarId(active[0].id);
-        }
-
-        // Default points + locked increment
-        const dur = getDurationMinutes(start, end);
-        setPrimaryPoints(dur);
         setLockedIncrement(inc);
+
+        // Create first entry with default pillar
+        setEntries([makeEntry(active[0]?.id || "")]);
       } catch (err) {
         if (!ignore) setLoadError(err.message || "Failed to load");
       } finally {
@@ -97,7 +224,7 @@ export default function PentaLogBlockScreen() {
     return () => { ignore = true; };
   }, []);
 
-  // Recompute points when times or pillar split changes
+  // Duration
   const duration = (() => {
     if (!startTime || !endTime) return 0;
     const s = parseTimeToday(startTime);
@@ -107,30 +234,14 @@ export default function PentaLogBlockScreen() {
 
   const totalPoints = Math.max(0, duration);
 
-  // Keep points in sync with total and split mode
-  useEffect(() => {
-    if (!useSecondPillar) {
-      setPrimaryPoints(totalPoints);
-      setSecondPoints(0);
-    } else {
-      const half = Math.ceil(totalPoints / 2);
-      setPrimaryPoints(half);
-      setSecondPoints(totalPoints - half);
-    }
-  }, [totalPoints, useSecondPillar]);
-
   // Validation
   function getValidationError() {
-    if (!summary.trim()) return "Summary is required";
+    const valid = entries.filter((e) => e.summary.trim());
+    if (valid.length === 0) return "Add at least one item";
     if (duration <= 0) return "End time must be after start time";
-    if (!primaryPillarId) return "Select a pillar";
-    if (useSecondPillar && !secondPillarId) return "Select a second pillar";
-    if (useSecondPillar && secondPillarId === primaryPillarId)
-      return "Second pillar must be different";
-    if (primaryPoints + secondPoints !== totalPoints)
-      return "Points must equal total (" + totalPoints + ")";
-    if (primaryPoints < 0 || secondPoints < 0)
-      return "Points cannot be negative";
+    for (const e of valid) {
+      if (!e.pillarId) return `Select a pillar for "${e.summary.trim()}"`;
+    }
     return null;
   }
 
@@ -148,34 +259,32 @@ export default function PentaLogBlockScreen() {
       const today = getTodayDateString();
       const startDate = parseTimeToday(startTime);
       const endDate = parseTimeToday(endTime);
+      const validEntries = entries.filter((e) => e.summary.trim());
 
-      const allocations = [
-        { pillarId: primaryPillarId, points: primaryPoints },
-      ];
-      if (useSecondPillar && secondPillarId) {
-        allocations.push({ pillarId: secondPillarId, points: secondPoints });
-      }
-
-      // Use selected sub-pillar, or fall back to linked task's work_tag
       const linkedTask = taskId ? tasks.find((t) => t.id === taskId) : null;
-      const workTag = subPillarKey || linkedTask?.work_tag || null;
 
-      const block = await createTimeBlockWithPoints({
-        startAt: startDate.toISOString(),
-        endAt: endDate.toISOString(),
-        localDate: today,
-        summary: summary.trim(),
-        taskId: taskId || null,
-        totalPoints,
-        pillarAllocations: allocations,
-        workTag,
-      });
+      for (const entry of validEntries) {
+        const workTag = entry.subPillarKey || linkedTask?.work_tag || null;
 
-      // Upload attached photos
-      if (photos.length > 0) {
-        await Promise.all(
-          photos.map((file) => uploadBlockPhoto(block.id, file))
-        );
+        const block = await createTimeBlockWithPoints({
+          startAt: startDate.toISOString(),
+          endAt: endDate.toISOString(),
+          localDate: today,
+          summary: entry.summary.trim(),
+          taskId: taskId || null,
+          totalPoints,
+          pillarAllocations: [{ pillarId: entry.pillarId, points: totalPoints }],
+          workTag,
+        });
+
+        if (entry.photo) {
+          try {
+            await uploadBlockPhoto(block.id, entry.photo);
+          } catch (photoErr) {
+            console.error("Photo upload failed:", photoErr);
+            // Block saved, photo failed — continue
+          }
+        }
       }
 
       navigate("/", { state: { logged: true } });
@@ -186,16 +295,17 @@ export default function PentaLogBlockScreen() {
     }
   }
 
-  function handlePrimaryPointsChange(val) {
-    const num = Math.max(0, Math.min(totalPoints, Number(val) || 0));
-    setPrimaryPoints(num);
-    setSecondPoints(totalPoints - num);
+  function updateEntry(id, updated) {
+    setEntries((prev) => prev.map((e) => (e.id === id ? updated : e)));
   }
 
-  function handleSecondPointsChange(val) {
-    const num = Math.max(0, Math.min(totalPoints, Number(val) || 0));
-    setSecondPoints(num);
-    setPrimaryPoints(totalPoints - num);
+  function removeEntry(id) {
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+  }
+
+  function addEntry() {
+    const defaultPillar = pillars[0]?.id || "";
+    setEntries((prev) => [...prev, makeEntry(defaultPillar)]);
   }
 
   // Loading state
@@ -240,9 +350,7 @@ export default function PentaLogBlockScreen() {
   }
 
   const increment = profile?.increment_minutes || 15;
-  const allowDual = profile?.allow_dual_pillar_logging !== false;
-  const selectedPrimary = pillars.find((p) => p.id === primaryPillarId);
-  const selectedSecond = pillars.find((p) => p.id === secondPillarId);
+  const hasContent = entries.some((e) => e.summary.trim());
 
   return (
     <div className="page penta-page penta-page-with-nav">
@@ -260,14 +368,13 @@ export default function PentaLogBlockScreen() {
               onChange={(e) => {
                 const newStart = e.target.value;
                 setStartTime(newStart);
-                // Shift end time by the same gap
                 const gap = lockedIncrement || increment;
                 try {
                   const s = parseTimeToday(newStart);
                   const newEnd = new Date(s.getTime() + gap * 60000);
                   setEndTime(formatTime(newEnd));
                 } catch {
-                  // keep existing end if parse fails
+                  // keep existing end
                 }
               }}
               step={increment * 60}
@@ -282,7 +389,6 @@ export default function PentaLogBlockScreen() {
               value={endTime}
               onChange={(e) => {
                 setEndTime(e.target.value);
-                // Update locked increment so future start changes use new gap
                 try {
                   const s = parseTimeToday(startTime);
                   const newE = parseTimeToday(e.target.value);
@@ -301,198 +407,23 @@ export default function PentaLogBlockScreen() {
         </div>
       </div>
 
-      {/* Summary items */}
-      <div className="card penta-log-section">
-        <label className="penta-log-label">What did you do?</label>
-        <div className="penta-log-items">
-          {summaryItems.map((item, i) => (
-            <div key={i} className="penta-log-item-row">
-              <input
-                type="text"
-                className="penta-log-summary-input"
-                value={item}
-                onChange={(e) => {
-                  const updated = [...summaryItems];
-                  updated[i] = e.target.value;
-                  setSummaryItems(updated);
-                }}
-                placeholder={i === 0 ? "e.g. Deep work on project proposal" : "Another thing you did..."}
-                autoFocus={i === 0}
-              />
-              {summaryItems.length > 1 && (
-                <button
-                  type="button"
-                  className="penta-log-item-remove"
-                  onClick={() => setSummaryItems(summaryItems.filter((_, j) => j !== i))}
-                  aria-label="Remove"
-                >
-                  &times;
-                </button>
-              )}
-            </div>
-          ))}
-          <button
-            type="button"
-            className="penta-log-item-add"
-            onClick={() => setSummaryItems([...summaryItems, ""])}
-          >
-            + Add another
-          </button>
-        </div>
-      </div>
-
-      {/* Photos */}
-      <div className="card penta-log-section">
-        <label className="penta-log-label">Photos (optional)</label>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          capture="environment"
-          className="penta-log-file-input"
-          onChange={(e) => {
-            const files = Array.from(e.target.files || []);
-            if (files.length > 0) setPhotos((prev) => [...prev, ...files]);
-            e.target.value = "";
-          }}
+      {/* Log entries */}
+      {entries.map((entry, i) => (
+        <EntryCard
+          key={entry.id}
+          entry={entry}
+          index={i}
+          pillars={pillars}
+          subPillarsByPillar={subPillarsByPillar}
+          canRemove={entries.length > 1}
+          onChange={updateEntry}
+          onRemove={removeEntry}
         />
-        <div className="penta-log-photo-actions">
-          <button
-            type="button"
-            className="btn small"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            Add Photos
-          </button>
-        </div>
-        {photos.length > 0 && (
-          <div className="penta-log-photo-grid">
-            {photos.map((file, i) => (
-              <div key={i} className="penta-log-photo-thumb">
-                <img src={URL.createObjectURL(file)} alt={`Photo ${i + 1}`} />
-                <button
-                  className="penta-log-photo-remove"
-                  onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
-                  aria-label="Remove photo"
-                >
-                  &times;
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      ))}
 
-      {/* Primary pillar */}
-      <div className="card penta-log-section">
-        <label className="penta-log-label">Pillar</label>
-        <div className="penta-log-pillar-grid">
-          {pillars.map((p) => (
-            <button
-              key={p.id}
-              className={`penta-log-pillar-btn ${
-                primaryPillarId === p.id ? "selected" : ""
-              }`}
-              onClick={() => {
-                setPrimaryPillarId(p.id);
-                setSubPillarKey("");
-                if (secondPillarId === p.id) setSecondPillarId("");
-              }}
-            >
-              <span
-                className="penta-log-pillar-dot"
-                style={{ backgroundColor: p.colour }}
-              />
-              <span className="penta-log-pillar-label">{p.name}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Sub-pillar picker */}
-        {(() => {
-          const selPillar = pillars.find((p) => p.id === primaryPillarId);
-          const subs = selPillar
-            ? (subPillarsByPillar[selPillar.key] || []).filter((sp) => sp.is_active)
-            : [];
-          if (subs.length === 0) return null;
-          return (
-            <div className="penta-log-sub-section">
-              <label className="penta-log-label" style={{ marginTop: "0.75rem" }}>Category</label>
-              <div className="penta-log-sub-grid">
-                <button
-                  className={`penta-log-sub-btn ${subPillarKey === "" ? "selected" : ""}`}
-                  onClick={() => setSubPillarKey("")}
-                >
-                  None
-                </button>
-                {subs.map((sp) => (
-                  <button
-                    key={sp.key}
-                    className={`penta-log-sub-btn ${subPillarKey === sp.key ? "selected" : ""}`}
-                    style={{
-                      borderColor: sp.colour || "#999",
-                      color: subPillarKey === sp.key ? "#fff" : (sp.colour || "#999"),
-                      backgroundColor: subPillarKey === sp.key ? (sp.colour || "#999") : "transparent",
-                    }}
-                    onClick={() => setSubPillarKey(sp.key)}
-                  >
-                    {sp.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Second pillar toggle */}
-        {allowDual && (
-          <div className="penta-log-split-section">
-            <button
-              className={`penta-log-split-toggle ${
-                useSecondPillar ? "active" : ""
-              }`}
-              onClick={() => {
-                setUseSecondPillar(!useSecondPillar);
-                if (useSecondPillar) {
-                  setSecondPillarId("");
-                }
-              }}
-            >
-              {useSecondPillar ? "Single pillar" : "Split across two"}
-            </button>
-
-            {useSecondPillar && (
-              <>
-                <label className="penta-log-label" style={{ marginTop: "0.75rem" }}>
-                  Second pillar
-                </label>
-                <div className="penta-log-pillar-grid">
-                  {pillars
-                    .filter((p) => p.id !== primaryPillarId)
-                    .map((p) => (
-                      <button
-                        key={p.id}
-                        className={`penta-log-pillar-btn ${
-                          secondPillarId === p.id ? "selected" : ""
-                        }`}
-                        onClick={() => setSecondPillarId(p.id)}
-                      >
-                        <span
-                          className="penta-log-pillar-dot"
-                          style={{ backgroundColor: p.colour }}
-                        />
-                        <span className="penta-log-pillar-label">{p.name}</span>
-                      </button>
-                    ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Points auto-split evenly when two pillars selected */}
+      <button type="button" className="penta-log-add-entry" onClick={addEntry}>
+        + Add another item
+      </button>
 
       {/* Task linking */}
       {tasks.length > 0 && (
@@ -533,7 +464,7 @@ export default function PentaLogBlockScreen() {
       <button
         className="btn primary"
         onClick={handleSave}
-        disabled={saving || !summary.trim() || duration <= 0}
+        disabled={saving || !hasContent || duration <= 0}
       >
         {saving ? "Saving..." : `Log ${duration > 0 ? formatDuration(duration) : "Block"}`}
       </button>
