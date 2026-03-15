@@ -1,6 +1,20 @@
 export default function Loading() {
   return (
-    <div className="penta-loader-screen">
+    <div
+      className="penta-loader-screen"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 999,
+      }}
+    >
       <div className="penta-loader-ring">
         <svg viewBox="0 0 100 100" className="penta-loader-svg">
           <polygon
