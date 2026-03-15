@@ -4075,6 +4075,92 @@ main {
 
 /* ===== Penta Business Screen ===== */
 
+.penta-biz-top-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.penta-biz-add-top-btn {
+  background: var(--gradient-btn);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+/* Urgent banner */
+.penta-biz-urgent {
+  background: #fef2f2;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.penta-biz-urgent-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.penta-biz-urgent-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.penta-biz-urgent-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--red);
+}
+
+.penta-biz-urgent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.penta-biz-urgent-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.penta-biz-urgent-task-title {
+  flex: 1;
+  color: var(--text);
+}
+
+.penta-biz-urgent-due {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.penta-biz-urgent-due.overdue {
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* Stats */
 .penta-biz-overview {
   display: flex;
   gap: 0.5rem;
@@ -4104,6 +4190,10 @@ main {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-dim);
+}
+
+.penta-biz-stat-danger {
+  color: var(--red);
 }
 
 .penta-biz-roles {
@@ -4160,10 +4250,42 @@ main {
   flex-shrink: 0;
 }
 
+.penta-biz-role-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
 .penta-biz-role-count {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: var(--text-dim);
+}
+
+.penta-biz-role-done-count {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+}
+
+.penta-biz-role-progress {
+  width: 80px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.penta-biz-role-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.penta-biz-role.has-overdue {
+  border-left: 3px solid var(--red);
 }
 
 .penta-biz-role-chevron {
@@ -4210,20 +4332,50 @@ main {
   flex-shrink: 0;
 }
 
-.penta-biz-task-title {
+.penta-biz-task-content {
   flex: 1;
+  min-width: 0;
+}
+
+.penta-biz-task-title {
   font-size: 0.85rem;
   color: var(--text);
+  display: block;
 }
 
 .penta-biz-task.done .penta-biz-task-title {
   text-decoration: line-through;
+  color: var(--text-dim);
+}
+
+.penta-biz-task.overdue {
+  background: rgba(220, 38, 38, 0.04);
 }
 
 .penta-biz-task-due {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-dim);
-  flex-shrink: 0;
+  display: block;
+  margin-top: 0.1rem;
+}
+
+.penta-biz-task-due.overdue {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.penta-biz-task-completed-at {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  display: block;
+  margin-top: 0.1rem;
+  font-style: italic;
+}
+
+.penta-biz-no-tasks {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  padding: 0.5rem 0;
 }
 
 .penta-biz-task-delete {
@@ -4242,12 +4394,18 @@ main {
   opacity: 1;
 }
 
-.penta-biz-task-add {
-  margin-top: 0.35rem;
+.penta-biz-inline-add {
+  margin-top: 0.5rem;
+}
+
+.penta-biz-inline-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
 }
 
 .penta-biz-task-input {
-  width: 100%;
+  flex: 1;
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
@@ -4263,16 +4421,142 @@ main {
   box-shadow: 0 0 0 2px var(--glow);
 }
 
-.penta-biz-completed {
-  margin-top: 0.5rem;
+.penta-biz-date-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  padding: 0.35rem;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
 }
 
-.penta-biz-completed-summary {
+.penta-biz-date-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.penta-biz-inline-date {
+  width: 100%;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 0.8rem;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  margin-top: 0.35rem;
+}
+
+.penta-biz-history {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.penta-biz-history-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-dim);
+  font-family: inherit;
+  padding: 0.25rem 0;
+}
+
+.penta-biz-history-toggle:hover {
+  color: var(--accent);
+}
+
+.penta-biz-history-list {
+  margin-top: 0.35rem;
+}
+
+/* Modal */
+.penta-biz-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .penta-biz-modal-overlay {
+    align-items: center;
+  }
+}
+
+.penta-biz-modal {
+  width: 100%;
+  max-width: 440px;
+  padding: 1.25rem;
+  border-radius: var(--radius);
+  animation: todoSlideUp 0.2s ease-out;
+}
+
+.penta-biz-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.penta-biz-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.penta-biz-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--text-dim);
   cursor: pointer;
-  padding: 0.3rem 0;
+}
+
+.penta-biz-field-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  display: block;
+  margin: 0.75rem 0 0.35rem;
+}
+
+.penta-biz-role-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.penta-biz-role-option {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+
+.penta-biz-role-option.selected {
+  border-color: var(--accent);
+  background: var(--glow);
+  color: var(--text);
+  font-weight: 600;
 }
 
 .penta-biz-role-remove {
