@@ -325,6 +325,7 @@ export default function PentaHomeScreen() {
 
   const [photos, setPhotos] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [timelineSort, setTimelineSort] = useState("recent");
 
   const increment = profile?.increment_minutes || 15;
   const {
@@ -474,23 +475,110 @@ export default function PentaHomeScreen() {
           {/* Timeline */}
           {blocks.length > 0 && (
             <>
-              <div className="penta-rv-section-label">Timeline</div>
+              <div className="penta-timeline-header">
+                <div className="penta-rv-section-label">Timeline</div>
+                <div className="penta-timeline-sort-toggle">
+                  <button
+                    className={`penta-timeline-sort-btn ${timelineSort === "recent" ? "active" : ""}`}
+                    onClick={() => setTimelineSort("recent")}
+                  >
+                    Recent
+                  </button>
+                  <button
+                    className={`penta-timeline-sort-btn ${timelineSort === "earliest" ? "active" : ""}`}
+                    onClick={() => setTimelineSort("earliest")}
+                  >
+                    Earliest
+                  </button>
+                  <button
+                    className={`penta-timeline-sort-btn ${timelineSort === "pillar" ? "active" : ""}`}
+                    onClick={() => setTimelineSort("pillar")}
+                  >
+                    By Pillar
+                  </button>
+                </div>
+              </div>
               <div className="penta-rv-timeline">
-                {timeSlots.map((slot) => {
-                  const s = new Date(slot.startAt);
-                  const e = new Date(slot.endAt);
-                  const dur = Math.round((e - s) / 60000);
-                  return (
-                    <TimelineSlot
-                      key={slot.key}
-                      timeLabel={`${formatTime(s)} – ${formatTime(e)}`}
-                      duration={dur}
-                      blocks={slot.blocks}
-                      pillarMap={pillarById}
-                      photos={photos}
-                    />
-                  );
-                })}
+                {(() => {
+                  if (timelineSort === "pillar") {
+                    // Group all blocks by pillar
+                    const pillarGroups = new Map();
+                    for (const slot of timeSlots) {
+                      for (const block of slot.blocks) {
+                        const allocs = block.block_pillar_points || [];
+                        const pillarIds = allocs.length > 0
+                          ? allocs.map((a) => a.pillar_id)
+                          : ["uncategorised"];
+                        for (const pid of pillarIds) {
+                          if (!pillarGroups.has(pid)) {
+                            pillarGroups.set(pid, { pillarId: pid, blocks: [] });
+                          }
+                          pillarGroups.get(pid).blocks.push({ block, slot });
+                        }
+                      }
+                    }
+                    return Array.from(pillarGroups.values()).map((group) => {
+                      const pillar = pillarById[group.pillarId];
+                      const label = pillar ? pillar.name : "Other";
+                      const colour = pillar ? pillar.colour : "#999";
+                      return (
+                        <div key={group.pillarId} className="penta-timeline-pillar-group">
+                          <div
+                            className="penta-timeline-pillar-label"
+                            style={{ color: colour }}
+                          >
+                            <span
+                              className="penta-timeline-pillar-dot"
+                              style={{ backgroundColor: colour }}
+                            />
+                            {label}
+                          </div>
+                          {group.blocks.map(({ block, slot }) => {
+                            const s = new Date(slot.startAt);
+                            const e = new Date(slot.endAt);
+                            return (
+                              <div key={block.id} className="penta-rv-block card">
+                                <div className="penta-rv-block-header">
+                                  <div className="penta-rv-block-time">
+                                    {formatTime(s)} – {formatTime(e)}
+                                  </div>
+                                </div>
+                                <BlockEntry
+                                  block={block}
+                                  pillarMap={pillarById}
+                                  photos={photos}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    });
+                  }
+
+                  // Time-based sorting
+                  const sorted = [...timeSlots].sort((a, b) => {
+                    const ta = new Date(a.startAt).getTime();
+                    const tb = new Date(b.startAt).getTime();
+                    return timelineSort === "recent" ? tb - ta : ta - tb;
+                  });
+
+                  return sorted.map((slot) => {
+                    const s = new Date(slot.startAt);
+                    const e = new Date(slot.endAt);
+                    const dur = Math.round((e - s) / 60000);
+                    return (
+                      <TimelineSlot
+                        key={slot.key}
+                        timeLabel={`${formatTime(s)} – ${formatTime(e)}`}
+                        duration={dur}
+                        blocks={slot.blocks}
+                        pillarMap={pillarById}
+                        photos={photos}
+                      />
+                    );
+                  });
+                })()}
               </div>
             </>
           )}
