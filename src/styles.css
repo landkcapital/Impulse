@@ -1407,12 +1407,23 @@ main {
 /* ===== Penta Loader ===== */
 
 .penta-loader-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
   gap: 1.25rem;
+  background: var(--bg);
+  z-index: 999;
+  margin: 0;
+  padding: 0;
 }
 
 .penta-loader-ring {
@@ -1819,7 +1830,8 @@ main {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
+  flex: 1;
+  min-height: 60vh;
   gap: 0.75rem;
   color: var(--text-dim);
   font-size: 0.9rem;
@@ -2284,15 +2296,38 @@ main {
   padding: 0.85rem 1.1rem;
 }
 
+.penta-rv-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
 .penta-rv-block-time {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-dim);
   letter-spacing: 0.02em;
-  margin-bottom: 0.3rem;
 }
 
-.penta-rv-block-summary {
+.penta-rv-block-dur {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.penta-rv-entry {
+  padding: 0.4rem 0;
+}
+
+.penta-rv-entry + .penta-rv-entry {
+  border-top: 1px solid var(--border);
+  padding-top: 0.6rem;
+}
+
+.penta-rv-entry-summary {
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--text);
@@ -2305,12 +2340,6 @@ main {
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
-}
-
-.penta-rv-block-dur {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-dim);
 }
 
 .penta-rv-block-pills {
@@ -2327,6 +2356,91 @@ main {
   padding: 0.15rem 0.5rem;
   border-radius: 10px;
   border: 1px solid;
+}
+
+/* Review photos */
+.penta-rv-photos {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  overflow-x: auto;
+}
+
+.penta-rv-photo-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Log screen photos */
+.penta-log-file-input {
+  display: none;
+}
+
+.penta-log-photo-actions {
+  margin-bottom: 0.5rem;
+}
+
+.penta-log-photo-grid {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.penta-log-photo-thumb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.penta-log-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.penta-log-photo-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Photo lightbox */
+.penta-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: pointer;
+  padding: 1rem;
+}
+
+.penta-lightbox-img {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 8px;
+  object-fit: contain;
 }
 
 /* Empty state */

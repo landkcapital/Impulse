@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getProfile } from "../api/pentaProfileApi";
 import { getUserPillars } from "../api/pentaPillarsApi";
 import { getTasksForDate } from "../api/pentaTasksApi";
 import { createTimeBlockWithPoints } from "../api/pentaTimeBlocksApi";
+import { uploadBlockPhoto } from "../api/pentaBlockPhotosApi";
 import {
   getDefaultBlock,
   formatTime,
@@ -39,6 +40,10 @@ export default function PentaLogBlockScreen() {
   const [primaryPoints, setPrimaryPoints] = useState(0);
   const [secondPoints, setSecondPoints] = useState(0);
   const [subPillarKey, setSubPillarKey] = useState("");
+
+  // Photos
+  const [photos, setPhotos] = useState([]);
+  const fileInputRef = useRef(null);
 
   // Save state
   const [saving, setSaving] = useState(false);
@@ -152,7 +157,7 @@ export default function PentaLogBlockScreen() {
       const linkedTask = taskId ? tasks.find((t) => t.id === taskId) : null;
       const workTag = subPillarKey || linkedTask?.work_tag || null;
 
-      await createTimeBlockWithPoints({
+      const block = await createTimeBlockWithPoints({
         startAt: startDate.toISOString(),
         endAt: endDate.toISOString(),
         localDate: today,
@@ -162,6 +167,13 @@ export default function PentaLogBlockScreen() {
         pillarAllocations: allocations,
         workTag,
       });
+
+      // Upload attached photos
+      if (photos.length > 0) {
+        await Promise.all(
+          photos.map((file) => uploadBlockPhoto(block.id, file))
+        );
+      }
 
       navigate("/", { state: { logged: true } });
     } catch (err) {
@@ -274,6 +286,49 @@ export default function PentaLogBlockScreen() {
           placeholder="e.g. Deep work on project proposal"
           autoFocus
         />
+      </div>
+
+      {/* Photos */}
+      <div className="card penta-log-section">
+        <label className="penta-log-label">Photos (optional)</label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          capture="environment"
+          className="penta-log-file-input"
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+            if (files.length > 0) setPhotos((prev) => [...prev, ...files]);
+            e.target.value = "";
+          }}
+        />
+        <div className="penta-log-photo-actions">
+          <button
+            type="button"
+            className="btn small"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Add Photos
+          </button>
+        </div>
+        {photos.length > 0 && (
+          <div className="penta-log-photo-grid">
+            {photos.map((file, i) => (
+              <div key={i} className="penta-log-photo-thumb">
+                <img src={URL.createObjectURL(file)} alt={`Photo ${i + 1}`} />
+                <button
+                  className="penta-log-photo-remove"
+                  onClick={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+                  aria-label="Remove photo"
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Primary pillar */}

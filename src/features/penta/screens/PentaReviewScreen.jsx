@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import usePentaReview from "../hooks/usePentaReview";
 import { generateBalanceSummary } from "../lib/reviewSummary";
 import { formatTime, formatDuration } from "../lib/time";
+import { getPhotosForBlocks } from "../api/pentaBlockPhotosApi";
 import PentaBalancePentagon from "../components/PentaBalancePentagon";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
@@ -33,24 +34,20 @@ function PillarTotalCard({ pillar, points }) {
   );
 }
 
-function TimelineBlock({ block, pillarMap }) {
-  const startDate = new Date(block.start_at);
-  const endDate = new Date(block.end_at);
-  const dur = Math.round((endDate - startDate) / 60000);
+function BlockEntry({ block, pillarMap, photos }) {
+  const [lightbox, setLightbox] = useState(null);
 
   const allocations = (block.block_pillar_points || []).map((bp) => ({
     pillar: pillarMap[bp.pillar_id],
     points: bp.points,
   }));
 
+  const blockPhotos = photos.filter((p) => p.block_id === block.id);
+
   return (
-    <div className="penta-rv-block card">
-      <div className="penta-rv-block-time">
-        {formatTime(startDate)} – {formatTime(endDate)}
-      </div>
-      <div className="penta-rv-block-summary">{block.summary}</div>
+    <div className="penta-rv-entry">
+      <div className="penta-rv-entry-summary">{block.summary}</div>
       <div className="penta-rv-block-meta">
-        <span className="penta-rv-block-dur">{formatDuration(dur)}</span>
         <div className="penta-rv-block-pills">
           {allocations.map((a, i) =>
             a.pillar ? (
@@ -69,6 +66,43 @@ function TimelineBlock({ block, pillarMap }) {
           )}
         </div>
       </div>
+      {blockPhotos.length > 0 && (
+        <div className="penta-rv-photos">
+          {blockPhotos.map((photo) => (
+            <img
+              key={photo.id}
+              src={photo.url}
+              alt=""
+              className="penta-rv-photo-thumb"
+              onClick={() => setLightbox(photo.url)}
+            />
+          ))}
+        </div>
+      )}
+      {lightbox && (
+        <div className="penta-lightbox" onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" className="penta-lightbox-img" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TimelineSlot({ timeLabel, duration, blocks, pillarMap, photos }) {
+  return (
+    <div className="penta-rv-block card">
+      <div className="penta-rv-block-header">
+        <div className="penta-rv-block-time">{timeLabel}</div>
+        <span className="penta-rv-block-dur">{formatDuration(duration)}</span>
+      </div>
+      {blocks.map((block) => (
+        <BlockEntry
+          key={block.id}
+          block={block}
+          pillarMap={pillarMap}
+          photos={photos}
+        />
+      ))}
     </div>
   );
 }
@@ -85,6 +119,15 @@ export default function PentaReviewScreen() {
     saveReview,
     refresh,
   } = usePentaReview();
+
+  // Photos
+  const [photos, setPhotos] = useState([]);
+  useEffect(() => {
+    if (blocks.length > 0) {
+      const ids = blocks.map((b) => b.id);
+      getPhotosForBlocks(ids).then(setPhotos).catch(() => {});
+    }
+  }, [blocks]);
 
   // Reflection form state
   const [reflection, setReflection] = useState("");
@@ -151,10 +194,23 @@ export default function PentaReviewScreen() {
     0
   );
 
+  // Group blocks by time slot (same start_at + end_at)
+  const timeSlots = [];
+  const slotMap = new Map();
+  for (const block of blocks) {
+    const key = `${block.start_at}|${block.end_at}`;
+    if (!slotMap.has(key)) {
+      const slot = { key, startAt: block.start_at, endAt: block.end_at, blocks: [] };
+      slotMap.set(key, slot);
+      timeSlots.push(slot);
+    }
+    slotMap.get(key).blocks.push(block);
+  }
+
   return (
     <div className="page penta-page penta-page-with-nav">
       <PentaHeader
-        title="Review"
+        title="History"
         subtitle={formatToday()}
       />
 
@@ -206,9 +262,21 @@ export default function PentaReviewScreen() {
         </div>
       ) : (
         <div className="penta-rv-timeline">
-          {blocks.map((block) => (
-            <TimelineBlock key={block.id} block={block} pillarMap={pillarMap} />
-          ))}
+          {timeSlots.map((slot) => {
+            const s = new Date(slot.startAt);
+            const e = new Date(slot.endAt);
+            const dur = Math.round((e - s) / 60000);
+            return (
+              <TimelineSlot
+                key={slot.key}
+                timeLabel={`${formatTime(s)} – ${formatTime(e)}`}
+                duration={dur}
+                blocks={slot.blocks}
+                pillarMap={pillarMap}
+                photos={photos}
+              />
+            );
+          })}
         </div>
       )}
 
