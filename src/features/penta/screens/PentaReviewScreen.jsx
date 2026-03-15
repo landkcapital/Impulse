@@ -6,6 +6,7 @@ import { formatTime, formatDuration } from "../lib/time";
 import PentaBalancePentagon from "../components/PentaBalancePentagon";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
+import PentaLoader from "../components/PentaLoader";
 
 function formatToday() {
   const d = new Date();
@@ -120,10 +121,7 @@ export default function PentaReviewScreen() {
   if (loading) {
     return (
       <div className="page penta-page">
-        <div className="penta-loading">
-          <div className="spinner" />
-          <span>Loading review...</span>
-        </div>
+        <PentaLoader label="Loading review..." />
       </div>
     );
   }

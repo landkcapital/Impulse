@@ -1,6 +1,10 @@
-export default function Loading() {
+/**
+ * Pentagon loading animation.
+ * Use fullScreen for route-level loading, inline for within-page loading.
+ */
+export default function PentaLoader({ label = "Loading..." }) {
   return (
-    <div className="penta-loader-screen">
+    <div className="penta-loader">
       <div className="penta-loader-ring">
         <svg viewBox="0 0 100 100" className="penta-loader-svg">
           <polygon
@@ -17,7 +21,7 @@ export default function Loading() {
           <circle cx="8.5" cy="38.2" r="4" fill="#8b5cf6" />
         </svg>
       </div>
-      <span className="penta-loader-text">Penta</span>
+      {label && <span className="penta-loader-text">{label}</span>}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { formatDuration } from "../lib/time";
 import PentaBalancePentagon from "../components/PentaBalancePentagon";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
+import PentaLoader from "../components/PentaLoader";
 
 function RangeSelector({ range, onSelect }) {
   return (
@@ -89,10 +90,7 @@ export default function PentaInsightsScreen() {
       <div className="page penta-page penta-page-with-nav">
         <PentaHeader title="Insights" subtitle="Patterns over time" />
         <RangeSelector range={range} onSelect={setRange} />
-        <div className="penta-loading">
-          <div className="spinner" />
-          <span>Loading insights...</span>
-        </div>
+        <PentaLoader label="Loading insights..." />
         <PentaNavBar />
       </div>
     );

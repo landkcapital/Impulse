@@ -12,6 +12,7 @@ import useSubPillars from "../hooks/useSubPillars";
 import PentaBalancePentagon from "../components/PentaBalancePentagon";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
+import PentaLoader from "../components/PentaLoader";
 import useLoggingNudge from "../hooks/useLoggingNudge";
 
 function formatToday() {
@@ -286,10 +287,7 @@ export default function PentaHomeScreen() {
   if (loading) {
     return (
       <div className="page penta-page">
-        <div className="penta-loading">
-          <div className="spinner" />
-          <span>Loading Penta...</span>
-        </div>
+        <PentaLoader label="Loading Penta..." />
       </div>
     );
   }

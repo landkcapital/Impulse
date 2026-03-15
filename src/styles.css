@@ -1813,7 +1813,8 @@ main {
   margin-bottom: 0.75rem;
 }
 
-.penta-loading {
+.penta-loading,
+.penta-loader {
   display: flex;
   flex-direction: column;
   align-items: center;

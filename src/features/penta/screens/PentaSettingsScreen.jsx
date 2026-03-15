@@ -4,6 +4,7 @@ import useSubPillars from "../hooks/useSubPillars";
 import { getUserPillars } from "../api/pentaPillarsApi";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
+import PentaLoader from "../components/PentaLoader";
 
 const INCREMENT_OPTIONS = [
   { value: 5, label: "5 min" },
@@ -249,10 +250,7 @@ export default function PentaSettingsScreen() {
   if (loading) {
     return (
       <div className="page penta-page">
-        <div className="penta-loading">
-          <div className="spinner" />
-          <span>Loading settings...</span>
-        </div>
+        <PentaLoader label="Loading settings..." />
       </div>
     );
   }
