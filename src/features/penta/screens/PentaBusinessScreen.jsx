@@ -50,6 +50,88 @@ function formatDateTime(isoStr) {
   });
 }
 
+// ─── Focus Queue (global sorted todo list) ───
+function FocusQueue({ tasks, roles, onToggle, onDelete }) {
+  const roleMap = {};
+  for (const r of roles) roleMap[r.id] = r;
+
+  const pending = tasks
+    .filter((t) => !t.is_done)
+    .sort((a, b) => {
+      // Overdue first, then by due date (soonest first), then no-date last
+      const aOverdue = isOverdue(a.due_date);
+      const bOverdue = isOverdue(b.due_date);
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+      if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+      if (a.due_date && !b.due_date) return -1;
+      if (!a.due_date && b.due_date) return 1;
+      return 0;
+    });
+
+  // Group by date label
+  const groups = [];
+  let currentLabel = null;
+  for (const t of pending) {
+    let label;
+    if (!t.due_date) {
+      label = "No deadline";
+    } else if (isOverdue(t.due_date)) {
+      label = "Overdue";
+    } else if (t.due_date === todayStr()) {
+      label = "Due today";
+    } else {
+      label = `Due ${formatDate(t.due_date)}`;
+    }
+    if (label !== currentLabel) {
+      groups.push({ label, isOverdue: isOverdue(t.due_date), tasks: [] });
+      currentLabel = label;
+    }
+    groups[groups.length - 1].tasks.push(t);
+  }
+
+  if (pending.length === 0) {
+    return <div className="penta-biz-no-tasks" style={{ padding: "2rem" }}>All tasks complete!</div>;
+  }
+
+  return (
+    <div className="penta-biz-focus-queue">
+      {groups.map((group) => (
+        <div key={group.label} className="penta-biz-focus-group">
+          <div className={`penta-biz-focus-label ${group.isOverdue ? "overdue" : ""}`}>
+            {group.label} ({group.tasks.length})
+          </div>
+          <div className="penta-biz-task-list">
+            {group.tasks.map((t) => {
+              const role = roleMap[t.role_id];
+              return (
+                <div key={t.id} className={`penta-biz-task ${isOverdue(t.due_date) ? "overdue" : ""}`}>
+                  <button className="penta-biz-task-check" onClick={() => onToggle(t.id, true)}>
+                    <span className="penta-todo-check" />
+                  </button>
+                  <div className="penta-biz-task-content">
+                    <span className="penta-biz-task-title">{t.title}</span>
+                    <div className="penta-biz-focus-meta">
+                      <span className="penta-biz-role-dot" style={{ backgroundColor: role?.colour }} />
+                      <span className="penta-biz-focus-role-name">{role?.name}</span>
+                      {t.due_date && (
+                        <span className={`penta-biz-task-due ${isOverdue(t.due_date) ? "overdue" : ""}`}>
+                          {formatDate(t.due_date)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button className="penta-biz-task-delete" onClick={() => onDelete(t.id)}>&times;</button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Urgent Tasks Banner ───
 function UrgentBanner({ tasks, roles }) {
   const roleMap = {};
@@ -415,6 +497,7 @@ export default function PentaBusinessScreen() {
 
   const [settingUp, setSettingUp] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [view, setView] = useState("focus"); // "focus" or "roles"
 
   async function handleSetup() {
     setSettingUp(true);
@@ -490,24 +573,51 @@ export default function PentaBusinessScreen() {
             </div>
           </div>
 
-          {/* Role cards */}
-          <div className="penta-biz-roles">
-            {roles.map((role) => (
-              <RoleCard
-                key={role.id}
-                role={role}
-                tasks={tasksByRole[role.id] || []}
-                allTasks={tasks}
-                maxCompleted={maxCompleted}
-                onToggleTask={toggleTask}
-                onDeleteTask={removeTask}
-                onAddTask={addTask}
-                onDeleteRole={removeRole}
-              />
-            ))}
+          {/* View toggle */}
+          <div className="penta-biz-view-toggle">
+            <button
+              className={`penta-biz-view-btn ${view === "focus" ? "active" : ""}`}
+              onClick={() => setView("focus")}
+            >
+              Focus Queue
+            </button>
+            <button
+              className={`penta-biz-view-btn ${view === "roles" ? "active" : ""}`}
+              onClick={() => setView("roles")}
+            >
+              By Role
+            </button>
           </div>
 
-          <AddRoleForm onAdd={addRole} />
+          {view === "focus" ? (
+            <FocusQueue
+              tasks={tasks}
+              roles={roles}
+              onToggle={toggleTask}
+              onDelete={removeTask}
+            />
+          ) : (
+            <>
+              {/* Role cards */}
+              <div className="penta-biz-roles">
+                {roles.map((role) => (
+                  <RoleCard
+                    key={role.id}
+                    role={role}
+                    tasks={tasksByRole[role.id] || []}
+                    allTasks={tasks}
+                    maxCompleted={maxCompleted}
+                    onToggleTask={toggleTask}
+                    onDeleteTask={removeTask}
+                    onAddTask={addTask}
+                    onDeleteRole={removeRole}
+                  />
+                ))}
+              </div>
+
+              <AddRoleForm onAdd={addRole} />
+            </>
+          )}
         </>
       )}
 
