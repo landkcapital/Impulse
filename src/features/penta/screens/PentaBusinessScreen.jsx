@@ -90,6 +90,8 @@ function FocusQueue({ tasks, roles, onToggle, onDelete }) {
     groups[groups.length - 1].tasks.push(t);
   }
 
+  const firstTaskId = pending.length > 0 ? pending[0].id : null;
+
   if (pending.length === 0) {
     return <div className="penta-biz-no-tasks" style={{ padding: "2rem" }}>All tasks complete!</div>;
   }
@@ -104,8 +106,10 @@ function FocusQueue({ tasks, roles, onToggle, onDelete }) {
           <div className="penta-biz-task-list">
             {group.tasks.map((t) => {
               const role = roleMap[t.role_id];
+              const isFocus = t.id === firstTaskId;
               return (
-                <div key={t.id} className={`penta-biz-task ${isOverdue(t.due_date) ? "overdue" : ""}`}>
+                <div key={t.id} className={`penta-biz-task ${isOverdue(t.due_date) ? "overdue" : ""} ${isFocus ? "focus-next" : ""}`}>
+                  {isFocus && <div className="penta-biz-focus-badge">UP NEXT</div>}
                   <button className="penta-biz-task-check" onClick={() => onToggle(t.id, true)}>
                     <span className="penta-todo-check" />
                   </button>

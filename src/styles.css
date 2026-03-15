@@ -4135,6 +4135,27 @@ main {
   color: var(--text-muted);
   font-weight: 500;
 }
+.penta-biz-task.focus-next {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(20, 184, 166, 0.06));
+  border: 2px solid var(--accent, #5eead4);
+  border-radius: 12px;
+  padding: 0.75rem;
+  position: relative;
+  margin-bottom: 0.25rem;
+  box-shadow: 0 0 12px rgba(94, 234, 212, 0.15);
+}
+.penta-biz-focus-badge {
+  position: absolute;
+  top: -9px;
+  left: 12px;
+  background: var(--gradient-btn);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
 
 .penta-biz-top-bar {
   display: flex;
