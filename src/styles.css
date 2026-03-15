@@ -2021,10 +2021,13 @@ main {
 }
 
 .penta-log-time-divider {
-  color: var(--text-dim);
-  font-size: 1rem;
+  color: var(--accent);
+  font-size: 1.2rem;
+  font-weight: 600;
   flex-shrink: 0;
   margin-top: 1.25rem;
+  min-width: 1.5rem;
+  text-align: center;
 }
 
 .penta-log-duration {
@@ -2037,7 +2040,48 @@ main {
   margin-top: 1.25rem;
 }
 
-/* Summary */
+/* Summary items */
+.penta-log-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.penta-log-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.penta-log-item-row .penta-log-summary-input {
+  flex: 1;
+}
+.penta-log-item-remove {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.penta-log-item-remove:hover {
+  background: #fef2f2;
+}
+.penta-log-item-add {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.3rem 0;
+  text-align: left;
+}
+.penta-log-item-add:hover {
+  text-decoration: underline;
+}
+
 .penta-log-summary-input {
   width: 100%;
   padding: 0.7rem 0.9rem;

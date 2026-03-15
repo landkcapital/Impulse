@@ -33,7 +33,8 @@ export default function PentaLogBlockScreen() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [lockedIncrement, setLockedIncrement] = useState(null); // gap in minutes when start was last set
-  const [summary, setSummary] = useState("");
+  const [summaryItems, setSummaryItems] = useState([""]);
+  const summary = summaryItems.filter((s) => s.trim()).join(" · ");
   const [taskId, setTaskId] = useState("");
   const [primaryPillarId, setPrimaryPillarId] = useState("");
   const [secondPillarId, setSecondPillarId] = useState("");
@@ -300,17 +301,44 @@ export default function PentaLogBlockScreen() {
         </div>
       </div>
 
-      {/* Summary */}
+      {/* Summary items */}
       <div className="card penta-log-section">
         <label className="penta-log-label">What did you do?</label>
-        <input
-          type="text"
-          className="penta-log-summary-input"
-          value={summary}
-          onChange={(e) => setSummary(e.target.value)}
-          placeholder="e.g. Deep work on project proposal"
-          autoFocus
-        />
+        <div className="penta-log-items">
+          {summaryItems.map((item, i) => (
+            <div key={i} className="penta-log-item-row">
+              <input
+                type="text"
+                className="penta-log-summary-input"
+                value={item}
+                onChange={(e) => {
+                  const updated = [...summaryItems];
+                  updated[i] = e.target.value;
+                  setSummaryItems(updated);
+                }}
+                placeholder={i === 0 ? "e.g. Deep work on project proposal" : "Another thing you did..."}
+                autoFocus={i === 0}
+              />
+              {summaryItems.length > 1 && (
+                <button
+                  type="button"
+                  className="penta-log-item-remove"
+                  onClick={() => setSummaryItems(summaryItems.filter((_, j) => j !== i))}
+                  aria-label="Remove"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            className="penta-log-item-add"
+            onClick={() => setSummaryItems([...summaryItems, ""])}
+          >
+            + Add another
+          </button>
+        </div>
       </div>
 
       {/* Photos */}
