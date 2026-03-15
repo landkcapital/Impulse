@@ -44,8 +44,8 @@ function EntryCard({
     ? (subPillarsByPillar[selectedPillar.key] || []).filter((sp) => sp.is_active)
     : [];
 
-  function update(field, value) {
-    onChange(entry.id, { ...entry, [field]: value });
+  function update(updates) {
+    onChange(entry.id, { ...entry, ...updates });
   }
 
   return (
@@ -69,7 +69,7 @@ function EntryCard({
         type="text"
         className="penta-log-summary-input"
         value={entry.summary}
-        onChange={(e) => update("summary", e.target.value)}
+        onChange={(e) => update({ summary: e.target.value })}
         placeholder={index === 0 ? "What did you do?" : "Another thing you did..."}
         autoFocus={index === 0}
       />
@@ -87,8 +87,9 @@ function EntryCard({
               color: entry.pillarId === p.id ? "#fff" : p.colour,
             }}
             onClick={() => {
-              update("pillarId", p.id);
-              if (entry.pillarId !== p.id) update("subPillarKey", "");
+              const updates = { pillarId: p.id };
+              if (entry.pillarId !== p.id) updates.subPillarKey = "";
+              update(updates);
             }}
           >
             {p.name}
@@ -102,7 +103,7 @@ function EntryCard({
           <button
             type="button"
             className={`penta-log-sub-btn ${entry.subPillarKey === "" ? "selected" : ""}`}
-            onClick={() => update("subPillarKey", "")}
+            onClick={() => update({ subPillarKey: "" })}
           >
             None
           </button>
@@ -116,7 +117,7 @@ function EntryCard({
                 color: entry.subPillarKey === sp.key ? "#fff" : (sp.colour || "#999"),
                 backgroundColor: entry.subPillarKey === sp.key ? (sp.colour || "#999") : "transparent",
               }}
-              onClick={() => update("subPillarKey", sp.key)}
+              onClick={() => update({ subPillarKey: sp.key })}
             >
               {sp.label}
             </button>
@@ -133,7 +134,7 @@ function EntryCard({
           className="penta-log-file-input"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) update("photo", file);
+            if (file) update({ photo: file });
             e.target.value = "";
           }}
         />
@@ -143,7 +144,7 @@ function EntryCard({
             <button
               type="button"
               className="penta-log-photo-remove"
-              onClick={() => update("photo", null)}
+              onClick={() => update({ photo: null })}
               aria-label="Remove photo"
             >
               &times;
