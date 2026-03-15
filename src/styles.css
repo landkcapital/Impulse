@@ -1996,7 +1996,7 @@ main {
   width: 100%;
   padding: 0.6rem 0.75rem;
   background: var(--bg);
-  border: 1px solid var(--border);
+  border: 2px solid var(--accent);
   border-radius: var(--radius-sm);
   color: var(--text);
   font-size: 1.1rem;
@@ -2005,11 +2005,19 @@ main {
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   text-align: center;
+  accent-color: var(--accent);
+  color-scheme: light;
 }
 
 .penta-log-time-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--glow);
+}
+
+.penta-log-time-input::-webkit-calendar-picker-indicator {
+  filter: none;
+  cursor: pointer;
+  color: var(--accent);
 }
 
 .penta-log-time-divider {

@@ -32,6 +32,7 @@ export default function PentaLogBlockScreen() {
   // Form state
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [lockedIncrement, setLockedIncrement] = useState(null); // gap in minutes when start was last set
   const [summary, setSummary] = useState("");
   const [taskId, setTaskId] = useState("");
   const [primaryPillarId, setPrimaryPillarId] = useState("");
@@ -80,9 +81,10 @@ export default function PentaLogBlockScreen() {
           setPrimaryPillarId(active[0].id);
         }
 
-        // Default points
+        // Default points + locked increment
         const dur = getDurationMinutes(start, end);
         setPrimaryPoints(dur);
+        setLockedIncrement(inc);
       } catch (err) {
         if (!ignore) setLoadError(err.message || "Failed to load");
       } finally {
@@ -254,7 +256,19 @@ export default function PentaLogBlockScreen() {
               type="time"
               className="penta-log-time-input"
               value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              onChange={(e) => {
+                const newStart = e.target.value;
+                setStartTime(newStart);
+                // Shift end time by the same gap
+                const gap = lockedIncrement || increment;
+                try {
+                  const s = parseTimeToday(newStart);
+                  const newEnd = new Date(s.getTime() + gap * 60000);
+                  setEndTime(formatTime(newEnd));
+                } catch {
+                  // keep existing end if parse fails
+                }
+              }}
               step={increment * 60}
             />
           </div>
@@ -265,7 +279,18 @@ export default function PentaLogBlockScreen() {
               type="time"
               className="penta-log-time-input"
               value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
+              onChange={(e) => {
+                setEndTime(e.target.value);
+                // Update locked increment so future start changes use new gap
+                try {
+                  const s = parseTimeToday(startTime);
+                  const newE = parseTimeToday(e.target.value);
+                  const newGap = getDurationMinutes(s, newE);
+                  if (newGap > 0) setLockedIncrement(newGap);
+                } catch {
+                  // ignore
+                }
+              }}
               step={increment * 60}
             />
           </div>
