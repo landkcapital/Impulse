@@ -28,8 +28,8 @@ export default function Login({ onAuth }) {
   return (
     <div className="login-page">
       <div className="login-container card">
-        <h1 className="login-logo">Impulse</h1>
-        <p className="login-subtitle">Track your impulses. Master your goals.</p>
+        <h1 className="login-logo">Penta</h1>
+        <p className="login-subtitle">Balance your time across the five pillars of life.</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Email</label>

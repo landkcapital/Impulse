@@ -14,9 +14,11 @@ import {
 } from "../lib/time";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
+import useSubPillars from "../hooks/useSubPillars";
 
 export default function PentaLogBlockScreen() {
   const navigate = useNavigate();
+  const { byPillar: subPillarsByPillar } = useSubPillars();
 
   // Data
   const [profile, setProfile] = useState(null);
@@ -35,6 +37,7 @@ export default function PentaLogBlockScreen() {
   const [useSecondPillar, setUseSecondPillar] = useState(false);
   const [primaryPoints, setPrimaryPoints] = useState(0);
   const [secondPoints, setSecondPoints] = useState(0);
+  const [subPillarKey, setSubPillarKey] = useState("");
 
   // Save state
   const [saving, setSaving] = useState(false);
@@ -144,9 +147,9 @@ export default function PentaLogBlockScreen() {
         allocations.push({ pillarId: secondPillarId, points: secondPoints });
       }
 
-      // If a linked task has a work_tag, pass it to the time block
+      // Use selected sub-pillar, or fall back to linked task's work_tag
       const linkedTask = taskId ? tasks.find((t) => t.id === taskId) : null;
-      const workTag = linkedTask?.work_tag || null;
+      const workTag = subPillarKey || linkedTask?.work_tag || null;
 
       await createTimeBlockWithPoints({
         startAt: startDate.toISOString(),
@@ -159,7 +162,7 @@ export default function PentaLogBlockScreen() {
         workTag,
       });
 
-      navigate("/penta", { state: { logged: true } });
+      navigate("/", { state: { logged: true } });
     } catch (err) {
       setSaveError(err.message || "Failed to save time block");
     } finally {
@@ -198,7 +201,7 @@ export default function PentaLogBlockScreen() {
         <div className="card penta-error">
           <div className="penta-error-title">Something went wrong</div>
           <div className="penta-error-message">{loadError}</div>
-          <button className="btn small" onClick={() => navigate("/penta")}>
+          <button className="btn small" onClick={() => navigate("/")}>
             Back
           </button>
         </div>
@@ -215,7 +218,7 @@ export default function PentaLogBlockScreen() {
           <div className="penta-error-message">
             Your account needs to be set up before logging.
           </div>
-          <button className="btn small" onClick={() => navigate("/penta")}>
+          <button className="btn small" onClick={() => navigate("/")}>
             Back
           </button>
         </div>
@@ -287,6 +290,7 @@ export default function PentaLogBlockScreen() {
               }`}
               onClick={() => {
                 setPrimaryPillarId(p.id);
+                setSubPillarKey("");
                 if (secondPillarId === p.id) setSecondPillarId("");
               }}
             >
@@ -298,6 +302,42 @@ export default function PentaLogBlockScreen() {
             </button>
           ))}
         </div>
+
+        {/* Sub-pillar picker */}
+        {(() => {
+          const selPillar = pillars.find((p) => p.id === primaryPillarId);
+          const subs = selPillar
+            ? (subPillarsByPillar[selPillar.key] || []).filter((sp) => sp.is_active)
+            : [];
+          if (subs.length === 0) return null;
+          return (
+            <div className="penta-log-sub-section">
+              <label className="penta-log-label" style={{ marginTop: "0.75rem" }}>Category</label>
+              <div className="penta-log-sub-grid">
+                <button
+                  className={`penta-log-sub-btn ${subPillarKey === "" ? "selected" : ""}`}
+                  onClick={() => setSubPillarKey("")}
+                >
+                  None
+                </button>
+                {subs.map((sp) => (
+                  <button
+                    key={sp.key}
+                    className={`penta-log-sub-btn ${subPillarKey === sp.key ? "selected" : ""}`}
+                    style={{
+                      borderColor: sp.colour || "#999",
+                      color: subPillarKey === sp.key ? "#fff" : (sp.colour || "#999"),
+                      backgroundColor: subPillarKey === sp.key ? (sp.colour || "#999") : "transparent",
+                    }}
+                    onClick={() => setSubPillarKey(sp.key)}
+                  >
+                    {sp.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Second pillar toggle */}
         {allowDual && (

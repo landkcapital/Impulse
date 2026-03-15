@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { fetchSettings, upsertSettings } from "../lib/impulses";
 
 const ACCENT_COLORS = [
+  { color: "#0ea5c2", dark: "#0891a8", name: "Reef" },
   { color: "#a855f7", dark: "#7c3aed", name: "Purple" },
   { color: "#3b82f6", dark: "#2563eb", name: "Blue" },
   { color: "#06b6d4", dark: "#0891b2", name: "Cyan" },
@@ -22,7 +23,7 @@ export function applyAccentColor(color) {
 }
 
 export default function Settings() {
-  const [selectedColor, setSelectedColor] = useState("#a855f7");
+  const [selectedColor, setSelectedColor] = useState("#0ea5c2");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);

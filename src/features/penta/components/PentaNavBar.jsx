@@ -1,11 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
 
 const NAV_ITEMS = [
-  { path: "/penta", label: "Home", icon: "home" },
-  { path: "/penta/log", label: "Log", icon: "log" },
-  { path: "/penta/review", label: "Review", icon: "review" },
-  { path: "/penta/insights", label: "Insights", icon: "insights" },
-  { path: "/penta/settings", label: "Settings", icon: "settings" },
+  { path: "/", label: "Home", icon: "home" },
+  { path: "/log", label: "Log", icon: "log" },
+  { path: "/review", label: "Review", icon: "review" },
+  { path: "/insights", label: "Insights", icon: "insights" },
+  { path: "/settings", label: "Settings", icon: "settings" },
 ];
 
 function NavIcon({ icon }) {

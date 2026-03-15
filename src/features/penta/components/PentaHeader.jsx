@@ -14,7 +14,7 @@ export default function PentaHeader({
   title,
   subtitle,
   showBack = false,
-  backTo = "/penta",
+  backTo = "/",
   right,
 }) {
   const navigate = useNavigate();

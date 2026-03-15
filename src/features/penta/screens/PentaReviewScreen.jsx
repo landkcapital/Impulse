@@ -201,7 +201,7 @@ export default function PentaReviewScreen() {
           <button
             className="btn small"
             style={{ marginTop: "0.75rem" }}
-            onClick={() => navigate("/penta/log")}
+            onClick={() => navigate("/log")}
           >
             Log a block
           </button>

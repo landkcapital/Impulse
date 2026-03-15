@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import usePentaSettings from "../hooks/usePentaSettings";
+import useSubPillars from "../hooks/useSubPillars";
 import { getUserPillars } from "../api/pentaPillarsApi";
-import { WORK_TAGS, WORK_TAG_COLOURS } from "../lib/founderInsight";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
 
@@ -18,7 +18,7 @@ const TIMEZONE_OPTIONS = [
   { value: "UTC", label: "UTC" },
 ];
 
-function TemplateRow({ template, pillarMap, pillars, onUpdate, onDelete }) {
+function TemplateRow({ template, pillarMap, pillars, allSubPillars, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(template.title);
   const [saving, setSaving] = useState(false);
@@ -26,8 +26,8 @@ function TemplateRow({ template, pillarMap, pillars, onUpdate, onDelete }) {
   const pillar = template.default_pillar_key
     ? pillarMap[template.default_pillar_key]
     : null;
-  const workTag = template.work_tag
-    ? WORK_TAGS.find((t) => t.key === template.work_tag)
+  const subPillar = template.work_tag
+    ? allSubPillars.find((sp) => sp.key === template.work_tag)
     : null;
 
   async function handleSave() {
@@ -95,15 +95,15 @@ function TemplateRow({ template, pillarMap, pillars, onUpdate, onDelete }) {
           />
         )}
         <span className="penta-set-template-title">{template.title}</span>
-        {workTag && (
+        {subPillar && (
           <span
             className="penta-set-template-tag"
             style={{
-              backgroundColor: WORK_TAG_COLOURS[template.work_tag] + "18",
-              color: WORK_TAG_COLOURS[template.work_tag],
+              backgroundColor: (subPillar.colour || "#999") + "18",
+              color: subPillar.colour || "#999",
             }}
           >
-            {workTag.label}
+            {subPillar.label}
           </span>
         )}
       </div>
@@ -118,7 +118,7 @@ function TemplateRow({ template, pillarMap, pillars, onUpdate, onDelete }) {
   );
 }
 
-function CreateTemplateForm({ pillars, onSave }) {
+function CreateTemplateForm({ pillars, subPillarsByPillar, onSave }) {
   const [title, setTitle] = useState("");
   const [pillarKey, setPillarKey] = useState("");
   const [workTag, setWorkTag] = useState("");
@@ -146,7 +146,9 @@ function CreateTemplateForm({ pillars, onSave }) {
     }
   }
 
-  const showWorkTag = pillarKey === "work";
+  const activeSubs = pillarKey
+    ? (subPillarsByPillar[pillarKey] || []).filter((sp) => sp.is_active)
+    : [];
 
   return (
     <form className="penta-set-template-form" onSubmit={handleSubmit}>
@@ -174,16 +176,16 @@ function CreateTemplateForm({ pillars, onSave }) {
             </option>
           ))}
         </select>
-        {showWorkTag && (
+        {activeSubs.length > 0 && (
           <select
             className="penta-set-select"
             value={workTag}
             onChange={(e) => setWorkTag(e.target.value)}
           >
-            <option value="">No tag</option>
-            {WORK_TAGS.map((t) => (
-              <option key={t.key} value={t.key}>
-                {t.label}
+            <option value="">No category</option>
+            {activeSubs.map((sp) => (
+              <option key={sp.key} value={sp.key}>
+                {sp.label}
               </option>
             ))}
           </select>
@@ -213,8 +215,18 @@ export default function PentaSettingsScreen() {
     refresh,
   } = usePentaSettings();
 
+  const {
+    subPillars: allSubPillars,
+    byPillar: subPillarsByPillar,
+    createSub,
+    deleteSub,
+  } = useSubPillars();
+
   const [pillars, setPillars] = useState([]);
   const [saveStatus, setSaveStatus] = useState(null);
+  const [newSubLabel, setNewSubLabel] = useState("");
+  const [newSubPillar, setNewSubPillar] = useState("");
+  const [addingSub, setAddingSub] = useState(false);
 
   // Load pillars for the template form
   useEffect(() => {
@@ -358,13 +370,96 @@ export default function PentaSettingsScreen() {
                 template={tmpl}
                 pillarMap={pillarByKey}
                 pillars={pillars}
+                allSubPillars={allSubPillars}
                 onUpdate={updateTemplate}
                 onDelete={deleteTemplate}
               />
             ))}
           </div>
         )}
-        <CreateTemplateForm pillars={pillars} onSave={createTemplate} />
+        <CreateTemplateForm pillars={pillars} subPillarsByPillar={subPillarsByPillar} onSave={createTemplate} />
+      </div>
+
+      {/* Sub-pillars / Categories section */}
+      <div className="penta-set-section-label">Categories</div>
+      <div className="card penta-set-card">
+        <div className="penta-set-sub-desc">
+          Add categories to any pillar to track how you spend time within it.
+        </div>
+        {pillars.map((pillar) => {
+          const subs = subPillarsByPillar[pillar.key] || [];
+          return (
+            <div key={pillar.key} className="penta-set-sub-group">
+              <div className="penta-set-sub-header">
+                <span
+                  className="penta-set-template-dot"
+                  style={{ backgroundColor: pillar.colour }}
+                />
+                <span className="penta-set-sub-pillar-name">{pillar.name}</span>
+              </div>
+              {subs.length > 0 && (
+                <div className="penta-set-sub-list">
+                  {subs.map((sp) => (
+                    <div key={sp.id} className="penta-set-sub-row">
+                      <span
+                        className="penta-set-sub-dot"
+                        style={{ backgroundColor: sp.colour || pillar.colour }}
+                      />
+                      <span className="penta-set-sub-label">{sp.label}</span>
+                      <button
+                        className="penta-set-template-delete"
+                        onClick={() => deleteSub(sp.id)}
+                        aria-label={`Delete ${sp.label}`}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <form
+                className="penta-set-sub-add"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (newSubPillar !== pillar.key) return;
+                  const label = newSubLabel.trim();
+                  if (!label || addingSub) return;
+                  setAddingSub(true);
+                  try {
+                    const key = label.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+                    // Auto-generate colour as a variation of pillar colour
+                    const hueShift = (subs.length * 30) % 360;
+                    await createSub({
+                      pillarKey: pillar.key,
+                      key,
+                      label,
+                      colour: pillar.colour,
+                    });
+                    setNewSubLabel("");
+                    setNewSubPillar("");
+                  } catch {
+                    // silent
+                  } finally {
+                    setAddingSub(false);
+                  }
+                }}
+              >
+                <input
+                  type="text"
+                  className="penta-set-sub-input"
+                  value={newSubPillar === pillar.key ? newSubLabel : ""}
+                  onChange={(e) => {
+                    setNewSubPillar(pillar.key);
+                    setNewSubLabel(e.target.value);
+                  }}
+                  onFocus={() => setNewSubPillar(pillar.key)}
+                  placeholder={`Add ${pillar.name.toLowerCase()} category...`}
+                  disabled={addingSub}
+                />
+              </form>
+            </div>
+          );
+        })}
       </div>
 
       <PentaNavBar />

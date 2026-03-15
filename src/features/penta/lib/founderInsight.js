@@ -1,5 +1,5 @@
 /**
- * Work sub-pillar definitions.
+ * Default work sub-pillar definitions (fallback when DB sub-pillars not loaded).
  */
 export const WORK_TAGS = [
   { key: "sales", label: "Sales" },
@@ -9,7 +9,7 @@ export const WORK_TAGS = [
 ];
 
 /**
- * Subtle colour variations of the Work pillar colour (Indigo #6366f1).
+ * Default colour variations of the Work pillar colour.
  */
 export const WORK_TAG_COLOURS = {
   sales: "#818cf8",
@@ -19,52 +19,54 @@ export const WORK_TAG_COLOURS = {
 };
 
 /**
- * Generate a short, neutral insight about today's work distribution.
+ * Generate a short insight about sub-pillar distribution for any pillar.
  *
- * Rules:
- * - Short, 1 sentence
- * - Neutral tone
- * - Execution focused
- * - No judgement
- *
- * @param {{ [tag: string]: number }} workTagTotals - minutes per work tag
- * @returns {string} insight sentence, or empty string if no work time
+ * @param {Array<{key: string, label: string}>} subPillars - sub-pillar definitions
+ * @param {{ [key: string]: number }} totals - minutes per sub-pillar key
+ * @param {string} [pillarName] - pillar name for context (default "Work")
+ * @returns {string} insight sentence
  */
-export function generateFounderInsight(workTagTotals) {
-  const entries = WORK_TAGS
-    .map((t) => ({ label: t.label, minutes: workTagTotals[t.key] || 0 }))
+export function generateSubPillarInsight(subPillars, totals, pillarName = "Work") {
+  const entries = subPillars
+    .map((sp) => ({ label: sp.label, minutes: totals[sp.key] || 0 }))
     .filter((e) => e.minutes > 0)
     .sort((a, b) => b.minutes - a.minutes);
 
   const total = entries.reduce((sum, e) => sum + e.minutes, 0);
 
   if (total === 0) {
-    return "No work time has been tagged today.";
+    return `No ${pillarName.toLowerCase()} time has been tagged today.`;
   }
 
   if (entries.length === 1) {
-    return `Work time today was entirely ${entries[0].label}.`;
+    return `${pillarName} time today was entirely ${entries[0].label}.`;
   }
 
   const top = entries[0];
   const topShare = top.minutes / total;
 
   if (topShare > 0.6) {
-    return `Work time today was mostly ${top.label}.`;
+    return `${pillarName} time today was mostly ${top.label}.`;
   }
 
-  // Check for zero tags
-  const zeroTags = WORK_TAGS
-    .filter((t) => !workTagTotals[t.key])
-    .map((t) => t.label);
+  const zeroTags = subPillars
+    .filter((sp) => !totals[sp.key])
+    .map((sp) => sp.label);
 
   if (zeroTags.length === 1) {
     return `No time has been spent on ${zeroTags[0]} today.`;
   }
 
   if (entries.length >= 3) {
-    return "Work time today was spread across multiple areas.";
+    return `${pillarName} time today was spread across multiple areas.`;
   }
 
-  return `Work time today was split between ${entries[0].label} and ${entries[1].label}.`;
+  return `${pillarName} time today was split between ${entries[0].label} and ${entries[1].label}.`;
+}
+
+/**
+ * Legacy wrapper — calls generateSubPillarInsight with default WORK_TAGS.
+ */
+export function generateFounderInsight(workTagTotals) {
+  return generateSubPillarInsight(WORK_TAGS, workTagTotals, "Work");
 }

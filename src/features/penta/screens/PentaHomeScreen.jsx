@@ -6,8 +6,9 @@ import { formatDuration } from "../lib/time";
 import {
   WORK_TAGS,
   WORK_TAG_COLOURS,
-  generateFounderInsight,
+  generateSubPillarInsight,
 } from "../lib/founderInsight";
+import useSubPillars from "../hooks/useSubPillars";
 import PentaBalancePentagon from "../components/PentaBalancePentagon";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
@@ -43,22 +44,22 @@ function PillarCard({ pillar, points }) {
   );
 }
 
-function WorkFocusCard({ workTagTotals }) {
-  const insightText = generateFounderInsight(workTagTotals);
+function SubPillarFocusCard({ pillarName, subPillars, totals }) {
+  const insightText = generateSubPillarInsight(subPillars, totals, pillarName);
 
   return (
     <div className="card penta-founder-card">
-      <div className="penta-founder-title">Work Focus Today</div>
+      <div className="penta-founder-title">{pillarName} Focus Today</div>
       <div className="penta-founder-rows">
-        {WORK_TAGS.map((tag) => {
-          const minutes = workTagTotals[tag.key] || 0;
+        {subPillars.map((sp) => {
+          const minutes = totals[sp.key] || 0;
           return (
-            <div key={tag.key} className="penta-founder-row">
+            <div key={sp.key} className="penta-founder-row">
               <span
                 className="penta-founder-dot"
-                style={{ backgroundColor: WORK_TAG_COLOURS[tag.key] }}
+                style={{ backgroundColor: sp.colour || "#999" }}
               />
-              <span className="penta-founder-label">{tag.label}</span>
+              <span className="penta-founder-label">{sp.label}</span>
               <span className="penta-founder-value">
                 {minutes > 0 ? formatDuration(minutes) : "0m"}
               </span>
@@ -73,25 +74,43 @@ function WorkFocusCard({ workTagTotals }) {
   );
 }
 
-function WorkTagBadge({ workTag }) {
-  const tag = WORK_TAGS.find((t) => t.key === workTag);
-  if (!tag) return null;
+function SubPillarBadge({ subPillarKey, allSubPillars }) {
+  const sp = allSubPillars.find((s) => s.key === subPillarKey);
+  if (!sp) {
+    // Fallback to hardcoded work tags
+    const tag = WORK_TAGS.find((t) => t.key === subPillarKey);
+    if (!tag) return null;
+    const colour = WORK_TAG_COLOURS[subPillarKey] || "#999";
+    return (
+      <span
+        className="penta-task-work-tag"
+        style={{
+          backgroundColor: colour + "18",
+          color: colour,
+          borderColor: colour + "30",
+        }}
+      >
+        {tag.label}
+      </span>
+    );
+  }
 
+  const colour = sp.colour || "#999";
   return (
     <span
       className="penta-task-work-tag"
       style={{
-        backgroundColor: WORK_TAG_COLOURS[workTag] + "18",
-        color: WORK_TAG_COLOURS[workTag],
-        borderColor: WORK_TAG_COLOURS[workTag] + "30",
+        backgroundColor: colour + "18",
+        color: colour,
+        borderColor: colour + "30",
       }}
     >
-      {tag.label}
+      {sp.label}
     </span>
   );
 }
 
-function TaskRow({ task, pillarMap, onToggle, onDelete }) {
+function TaskRow({ task, pillarMap, allSubPillars, onToggle, onDelete }) {
   const pillar = task.default_pillar_key
     ? pillarMap[task.default_pillar_key]
     : null;
@@ -106,7 +125,7 @@ function TaskRow({ task, pillarMap, onToggle, onDelete }) {
         <span className={`penta-task-check ${task.is_done ? "checked" : ""}`} />
       </button>
       <span className="penta-task-title">{task.title}</span>
-      {task.work_tag && <WorkTagBadge workTag={task.work_tag} />}
+      {task.work_tag && <SubPillarBadge subPillarKey={task.work_tag} allSubPillars={allSubPillars} />}
       {pillar && !task.work_tag && (
         <span
           className="penta-task-pillar-dot"
@@ -130,9 +149,15 @@ function TaskRow({ task, pillarMap, onToggle, onDelete }) {
   );
 }
 
-function QuickAddTask({ onAdd }) {
+function QuickAddTask({ onAdd, pillars, subPillarsByPillar }) {
   const [value, setValue] = useState("");
+  const [selectedPillar, setSelectedPillar] = useState(null);
+  const [selectedSubPillar, setSelectedSubPillar] = useState(null);
   const [adding, setAdding] = useState(false);
+
+  const activeSubs = selectedPillar
+    ? (subPillarsByPillar[selectedPillar] || []).filter((sp) => sp.is_active)
+    : [];
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -141,8 +166,15 @@ function QuickAddTask({ onAdd }) {
 
     setAdding(true);
     try {
-      await onAdd({ title, isNonNegotiable: false });
+      await onAdd({
+        title,
+        isNonNegotiable: false,
+        pillarKey: selectedPillar || null,
+        workTag: selectedSubPillar || null,
+      });
       setValue("");
+      setSelectedPillar(null);
+      setSelectedSubPillar(null);
     } catch {
       // silent — task stays in input for retry
     } finally {
@@ -160,6 +192,52 @@ function QuickAddTask({ onAdd }) {
         placeholder="Add a task for today..."
         disabled={adding}
       />
+      {pillars && pillars.length > 0 && (
+        <div className="penta-quick-pillar-row">
+          {pillars.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              className={`penta-quick-pillar-dot ${selectedPillar === p.key ? "selected" : ""}`}
+              style={{ backgroundColor: p.colour }}
+              onClick={() => {
+                if (selectedPillar === p.key) {
+                  setSelectedPillar(null);
+                  setSelectedSubPillar(null);
+                } else {
+                  setSelectedPillar(p.key);
+                  setSelectedSubPillar(null);
+                }
+              }}
+              title={p.name}
+              aria-label={p.name}
+            />
+          ))}
+        </div>
+      )}
+      {activeSubs.length > 0 && (
+        <div className="penta-quick-sub-row">
+          {activeSubs.map((sp) => (
+            <button
+              key={sp.key}
+              type="button"
+              className={`penta-quick-sub-btn ${selectedSubPillar === sp.key ? "selected" : ""}`}
+              style={{
+                borderColor: sp.colour || "#999",
+                color: selectedSubPillar === sp.key ? "#fff" : (sp.colour || "#999"),
+                backgroundColor: selectedSubPillar === sp.key ? (sp.colour || "#999") : "transparent",
+              }}
+              onClick={() => {
+                setSelectedSubPillar(
+                  selectedSubPillar === sp.key ? null : sp.key
+                );
+              }}
+            >
+              {sp.label}
+            </button>
+          ))}
+        </div>
+      )}
     </form>
   );
 }
@@ -169,6 +247,7 @@ export default function PentaHomeScreen() {
   const location = useLocation();
   const { pillars, scores, loading, error, refresh, profile, workTagTotals } =
     usePentaDashboard();
+  const { subPillars, byPillar: subPillarsByPillar } = useSubPillars();
   const {
     tasks,
     loading: tasksLoading,
@@ -268,7 +347,7 @@ export default function PentaHomeScreen() {
             <div className="penta-nudge-actions">
               <button
                 className="btn small primary"
-                onClick={() => navigate("/penta/log")}
+                onClick={() => navigate("/log")}
               >
                 Log now
               </button>
@@ -288,7 +367,7 @@ export default function PentaHomeScreen() {
       <div className="penta-cta">
         <button
           className="penta-cta-btn"
-          onClick={() => navigate("/penta/log")}
+          onClick={() => navigate("/log")}
         >
           Log last {formatDuration(increment)}
         </button>
@@ -322,10 +401,20 @@ export default function PentaHomeScreen() {
             ))}
           </div>
 
-          {/* Founder Mode: Work Focus card */}
-          {workPillar && workPoints > 0 && (
-            <WorkFocusCard workTagTotals={workTagTotals} />
-          )}
+          {/* Sub-pillar focus cards for pillars with sub-pillars and logged time */}
+          {activePillars.map((pillar) => {
+            const subs = (subPillarsByPillar[pillar.key] || []).filter((sp) => sp.is_active);
+            const pillarPoints = scores[pillar.id] || 0;
+            if (subs.length === 0 || pillarPoints === 0) return null;
+            return (
+              <SubPillarFocusCard
+                key={pillar.key}
+                pillarName={pillar.name}
+                subPillars={subs}
+                totals={workTagTotals}
+              />
+            );
+          })}
 
           <div className="card penta-total-row">
             <span className="penta-total-label">Total today</span>
@@ -348,7 +437,7 @@ export default function PentaHomeScreen() {
             <div className="penta-tasks-empty-text">
               No tasks yet for today.
             </div>
-            <QuickAddTask onAdd={createTask} />
+            <QuickAddTask onAdd={createTask} pillars={activePillars} subPillarsByPillar={subPillarsByPillar} />
           </div>
         ) : (
           <>
@@ -361,6 +450,7 @@ export default function PentaHomeScreen() {
                     key={task.id}
                     task={task}
                     pillarMap={pillarByKey}
+                    allSubPillars={subPillars}
                     onToggle={toggleTaskComplete}
                     onDelete={deleteTask}
                   />
@@ -384,7 +474,7 @@ export default function PentaHomeScreen() {
               ))}
             </div>
 
-            <QuickAddTask onAdd={createTask} />
+            <QuickAddTask onAdd={createTask} pillars={activePillars} subPillarsByPillar={subPillarsByPillar} />
           </>
         )}
       </div>

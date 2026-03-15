@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { getSession, onAuthStateChange } from "./lib/auth";
-import { fetchSettings } from "./lib/impulses";
-import { applyAccentColor } from "./pages/Settings";
 import Header from "./components/Header";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Loading from "./components/Loading";
@@ -22,6 +20,12 @@ import {
 import "./styles.css";
 
 function ProtectedRoute({ session, ready, children }) {
+  if (!ready) return <Loading />;
+  if (!session) return <Navigate to="/login" replace />;
+  return children;
+}
+
+function ImpulseRoute({ session, ready, children }) {
   if (!ready) return <Loading />;
   if (!session) return <Navigate to="/login" replace />;
   return (
@@ -65,17 +69,8 @@ export default function App() {
     };
   }, []);
 
-  // Load user theme settings once authenticated
-  useEffect(() => {
-    if (!session) return;
-    fetchSettings()
-      .then((settings) => {
-        if (settings?.accent_color) {
-          applyAccentColor(settings.accent_color);
-        }
-      })
-      .catch(() => {});
-  }, [session]);
+  // Impulse theme settings only apply on Impulse routes
+  // Penta uses its own reef turquoise theme from CSS defaults
 
   return (
     <BrowserRouter>
@@ -89,49 +84,9 @@ export default function App() {
               </PublicRoute>
             }
           />
+          {/* Penta routes (primary app) */}
           <Route
             path="/"
-            element={
-              <ProtectedRoute session={session} ready={ready}>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/goals"
-            element={
-              <ProtectedRoute session={session} ready={ready}>
-                <Goals />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/history"
-            element={
-              <ProtectedRoute session={session} ready={ready}>
-                <History />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute session={session} ready={ready}>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/account"
-            element={
-              <ProtectedRoute session={session} ready={ready}>
-                <Account />
-              </ProtectedRoute>
-            }
-          />
-          {/* Penta routes */}
-          <Route
-            path="/penta"
             element={
               <ProtectedRoute session={session} ready={ready}>
                 <PentaHomeScreen />
@@ -139,7 +94,7 @@ export default function App() {
             }
           />
           <Route
-            path="/penta/log"
+            path="/log"
             element={
               <ProtectedRoute session={session} ready={ready}>
                 <PentaLogBlockScreen />
@@ -147,7 +102,7 @@ export default function App() {
             }
           />
           <Route
-            path="/penta/review"
+            path="/review"
             element={
               <ProtectedRoute session={session} ready={ready}>
                 <PentaReviewScreen />
@@ -155,7 +110,7 @@ export default function App() {
             }
           />
           <Route
-            path="/penta/insights"
+            path="/insights"
             element={
               <ProtectedRoute session={session} ready={ready}>
                 <PentaInsightsScreen />
@@ -163,11 +118,58 @@ export default function App() {
             }
           />
           <Route
-            path="/penta/settings"
+            path="/settings"
             element={
               <ProtectedRoute session={session} ready={ready}>
                 <PentaSettingsScreen />
               </ProtectedRoute>
+            }
+          />
+          {/* Legacy /penta/* redirects */}
+          <Route path="/penta" element={<Navigate to="/" replace />} />
+          <Route path="/penta/log" element={<Navigate to="/log" replace />} />
+          <Route path="/penta/review" element={<Navigate to="/review" replace />} />
+          <Route path="/penta/insights" element={<Navigate to="/insights" replace />} />
+          <Route path="/penta/settings" element={<Navigate to="/settings" replace />} />
+          {/* Impulse routes (moved to /impulse/*) */}
+          <Route
+            path="/impulse"
+            element={
+              <ImpulseRoute session={session} ready={ready}>
+                <Home />
+              </ImpulseRoute>
+            }
+          />
+          <Route
+            path="/impulse/goals"
+            element={
+              <ImpulseRoute session={session} ready={ready}>
+                <Goals />
+              </ImpulseRoute>
+            }
+          />
+          <Route
+            path="/impulse/history"
+            element={
+              <ImpulseRoute session={session} ready={ready}>
+                <History />
+              </ImpulseRoute>
+            }
+          />
+          <Route
+            path="/impulse/settings"
+            element={
+              <ImpulseRoute session={session} ready={ready}>
+                <Settings />
+              </ImpulseRoute>
+            }
+          />
+          <Route
+            path="/impulse/account"
+            element={
+              <ImpulseRoute session={session} ready={ready}>
+                <Account />
+              </ImpulseRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

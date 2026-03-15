@@ -17,12 +17,12 @@
   --text: #1a1a2e;
   --text-muted: #5a5a72;
   --text-dim: #94949e;
-  --accent: var(--theme-accent, #a855f7);
-  --accent-dark: var(--theme-accent-dark, #7c3aed);
+  --accent: var(--theme-accent, #0ea5c2);
+  --accent-dark: var(--theme-accent-dark, #0891a8);
   --gradient: linear-gradient(135deg, var(--accent-dark), var(--accent));
   --gradient-btn: linear-gradient(135deg, var(--accent-dark), var(--accent));
-  --glow: rgba(168, 85, 247, 0.15);
-  --glow-strong: rgba(168, 85, 247, 0.25);
+  --glow: rgba(14, 165, 194, 0.15);
+  --glow-strong: rgba(14, 165, 194, 0.25);
   --green: #16a34a;
   --green-glow: rgba(22, 163, 74, 0.15);
   --red: #dc2626;
@@ -1401,6 +1401,108 @@ main {
 }
 
 @keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== Penta Loader ===== */
+
+.penta-loader-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 1.25rem;
+}
+
+.penta-loader-ring {
+  width: 72px;
+  height: 72px;
+  animation: pentaRotate 5s ease-in-out infinite;
+}
+
+.penta-loader-svg {
+  width: 100%;
+  height: 100%;
+  animation: pentaBreathe 5s ease-in-out infinite;
+}
+
+.penta-loader-shape {
+  stroke: var(--accent);
+  opacity: 0.7;
+}
+
+.penta-loader-dot {
+  opacity: 0.9;
+}
+
+.penta-loader-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+
+/*
+  Rotation: snap 72° at each step (5 steps = 360°)
+  Each step = 20% of the animation.
+  Pattern per step: hold → rotate → hold+breathe
+    0-6%   hold at 0°
+    6-12%  rotate to 72°
+   12-20%  hold at 72° (breathe happens here)
+   ... repeat for each 20% segment
+*/
+@keyframes pentaRotate {
+  0%     { transform: rotate(0deg); }
+  6%     { transform: rotate(0deg); }
+  12%    { transform: rotate(72deg); }
+  20%    { transform: rotate(72deg); }
+
+  26%    { transform: rotate(72deg); }
+  32%    { transform: rotate(144deg); }
+  40%    { transform: rotate(144deg); }
+
+  46%    { transform: rotate(144deg); }
+  52%    { transform: rotate(216deg); }
+  60%    { transform: rotate(216deg); }
+
+  66%    { transform: rotate(216deg); }
+  72%    { transform: rotate(288deg); }
+  80%    { transform: rotate(288deg); }
+
+  86%    { transform: rotate(288deg); }
+  92%    { transform: rotate(360deg); }
+  100%   { transform: rotate(360deg); }
+}
+
+/*
+  Breathe: scale up then down during each hold phase
+  Pulses happen in the "hold" windows (12-20%, 32-40%, etc.)
+*/
+@keyframes pentaBreathe {
+  0%     { transform: scale(1); }
+  12%    { transform: scale(1); }
+  16%    { transform: scale(1.12); }
+  20%    { transform: scale(1); }
+
+  32%    { transform: scale(1); }
+  36%    { transform: scale(1.12); }
+  40%    { transform: scale(1); }
+
+  52%    { transform: scale(1); }
+  56%    { transform: scale(1.12); }
+  60%    { transform: scale(1); }
+
+  72%    { transform: scale(1); }
+  76%    { transform: scale(1.12); }
+  80%    { transform: scale(1); }
+
+  92%    { transform: scale(1); }
+  96%    { transform: scale(1.12); }
+  100%   { transform: scale(1); }
+}
+
+@keyframes spin {
   to {
     transform: rotate(360deg);
   }
@@ -2378,7 +2480,7 @@ main {
 }
 
 .penta-set-input:focus {
-  border-bottom-color: var(--primary, #7c3aed);
+  border-bottom-color: var(--primary, #0891a8);
 }
 
 /* Template list */
@@ -2475,7 +2577,7 @@ main {
 /* ===== Penta Logging Nudge ===== */
 
 .penta-nudge {
-  border-left: 3px solid var(--primary, #7c3aed);
+  border-left: 3px solid var(--primary, #0891a8);
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
 }
@@ -2708,8 +2810,8 @@ main {
 }
 
 .penta-task-check.checked {
-  background-color: var(--primary, #7c3aed);
-  border-color: var(--primary, #7c3aed);
+  background-color: var(--primary, #0891a8);
+  border-color: var(--primary, #0891a8);
   position: relative;
 }
 
@@ -2803,7 +2905,7 @@ main {
 }
 
 .penta-task-quick-input:focus {
-  border-bottom-color: var(--primary, #7c3aed);
+  border-bottom-color: var(--primary, #0891a8);
 }
 
 /* ===== Penta Header ===== */
@@ -2906,6 +3008,160 @@ main {
 /* Add bottom padding to page content when navbar is present */
 .penta-page-with-nav {
   padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)) !important;
+}
+
+/* ===== Quick-Add Pillar Picker ===== */
+
+.penta-quick-pillar-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0 0;
+}
+
+.penta-quick-pillar-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  padding: 0;
+}
+
+.penta-quick-pillar-dot:hover {
+  transform: scale(1.15);
+}
+
+.penta-quick-pillar-dot.selected {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px currentColor;
+  transform: scale(1.15);
+}
+
+.penta-quick-sub-row {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  padding: 0.375rem 0 0;
+}
+
+.penta-quick-sub-btn {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 100px;
+  border: 1.5px solid;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: transparent;
+}
+
+.penta-quick-sub-btn:hover {
+  opacity: 0.8;
+}
+
+/* ===== Log Sub-Pillar Picker ===== */
+
+.penta-log-sub-section {
+  margin-top: 0.5rem;
+}
+
+.penta-log-sub-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.penta-log-sub-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.penta-log-sub-btn.selected {
+  border-color: var(--accent);
+  color: #fff;
+  background: var(--accent);
+}
+
+/* ===== Settings Sub-Pillars ===== */
+
+.penta-set-sub-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.penta-set-sub-group {
+  margin-bottom: 1rem;
+}
+
+.penta-set-sub-group:last-child {
+  margin-bottom: 0;
+}
+
+.penta-set-sub-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.penta-set-sub-pillar-name {
+  color: var(--text);
+}
+
+.penta-set-sub-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.penta-set-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+}
+
+.penta-set-sub-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.penta-set-sub-label {
+  flex: 1;
+  font-size: 0.85rem;
+}
+
+.penta-set-sub-add {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.penta-set-sub-input {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 0.8rem;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.penta-set-sub-input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 /* ===== Penta Insights Screen ===== */
