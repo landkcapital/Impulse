@@ -10,6 +10,11 @@ import {
 } from "../lib/founderInsight";
 import useSubPillars from "../hooks/useSubPillars";
 import { getPhotosForBlocks } from "../api/pentaBlockPhotosApi";
+import {
+  updateTimeBlock,
+  deleteTimeBlock,
+  replaceBlockPillarPoints,
+} from "../api/pentaTimeBlocksApi";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
 import PentaLoader from "../components/PentaLoader";
@@ -58,8 +63,14 @@ function PillarBarSquare({ pillar, points, maxPoints }) {
 }
 
 // ─── Timeline (from History) ───
-function BlockEntry({ block, pillarMap, photos }) {
+function BlockEntry({ block, pillarMap, allPillars, photos, onUpdate, onDelete }) {
   const [lightbox, setLightbox] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [editSummary, setEditSummary] = useState(block.summary || "");
+  const [editPillars, setEditPillars] = useState(
+    (block.block_pillar_points || []).map((bp) => bp.pillar_id)
+  );
+  const [saving, setSaving] = useState(false);
 
   const allocations = (block.block_pillar_points || []).map((bp) => ({
     pillar: pillarMap[bp.pillar_id],
@@ -68,9 +79,109 @@ function BlockEntry({ block, pillarMap, photos }) {
 
   const blockPhotos = photos.filter((p) => p.block_id === block.id);
 
+  function togglePillar(pillarId) {
+    setEditPillars((prev) =>
+      prev.includes(pillarId)
+        ? prev.filter((id) => id !== pillarId)
+        : [...prev, pillarId]
+    );
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      if (editSummary.trim() !== block.summary) {
+        await updateTimeBlock(block.id, { summary: editSummary.trim() });
+      }
+      const oldIds = (block.block_pillar_points || []).map((bp) => bp.pillar_id).sort().join(",");
+      const newIds = [...editPillars].sort().join(",");
+      if (oldIds !== newIds) {
+        const totalPoints = block.total_points || 1;
+        const perPillar = editPillars.length > 0
+          ? Math.round(totalPoints / editPillars.length)
+          : 0;
+        await replaceBlockPillarPoints(
+          block.id,
+          editPillars.map((pid) => ({ pillarId: pid, points: perPillar }))
+        );
+      }
+      setEditing(false);
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      console.error("Failed to update block:", err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm("Delete this log entry?")) return;
+    setSaving(true);
+    try {
+      await deleteTimeBlock(block.id);
+      if (onDelete) onDelete();
+    } catch (err) {
+      console.error("Failed to delete block:", err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="penta-rv-entry penta-rv-entry-editing">
+        <input
+          type="text"
+          className="penta-rv-edit-input"
+          value={editSummary}
+          onChange={(e) => setEditSummary(e.target.value)}
+          autoFocus
+        />
+        <div className="penta-rv-edit-pillars">
+          {allPillars.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`penta-rv-edit-pillar-btn ${editPillars.includes(p.id) ? "selected" : ""}`}
+              style={{
+                borderColor: p.colour,
+                color: editPillars.includes(p.id) ? "#fff" : p.colour,
+                backgroundColor: editPillars.includes(p.id) ? p.colour : "transparent",
+              }}
+              onClick={() => togglePillar(p.id)}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+        <div className="penta-rv-edit-actions">
+          <button className="btn small primary" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save"}
+          </button>
+          <button className="btn small" onClick={() => setEditing(false)} disabled={saving}>
+            Cancel
+          </button>
+          <button className="penta-rv-edit-delete" onClick={handleDelete} disabled={saving}>
+            Delete
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="penta-rv-entry">
-      <div className="penta-rv-entry-summary">{block.summary}</div>
+      <div className="penta-rv-entry-row">
+        <div className="penta-rv-entry-summary">{block.summary}</div>
+        <button
+          className="penta-rv-entry-edit-btn"
+          onClick={() => setEditing(true)}
+          aria-label="Edit"
+          title="Edit"
+        >
+          &#9998;
+        </button>
+      </div>
       <div className="penta-rv-block-meta">
         <div className="penta-rv-block-pills">
           {allocations.map((a, i) =>
@@ -112,7 +223,7 @@ function BlockEntry({ block, pillarMap, photos }) {
   );
 }
 
-function TimelineSlot({ timeLabel, duration, blocks, pillarMap, photos }) {
+function TimelineSlot({ timeLabel, duration, blocks, pillarMap, allPillars, photos, onUpdate, onDelete }) {
   return (
     <div className="penta-rv-block card">
       <div className="penta-rv-block-header">
@@ -124,7 +235,10 @@ function TimelineSlot({ timeLabel, duration, blocks, pillarMap, photos }) {
           key={block.id}
           block={block}
           pillarMap={pillarMap}
+          allPillars={allPillars}
           photos={photos}
+          onUpdate={onUpdate}
+          onDelete={onDelete}
         />
       ))}
     </div>
@@ -398,6 +512,11 @@ export default function PentaHomeScreen() {
   const nonNegotiables = tasks.filter((t) => t.is_non_negotiable);
   const todayTasks = tasks.filter((t) => !t.is_non_negotiable);
 
+  function handleBlockChange() {
+    refresh();
+    refreshReview();
+  }
+
   // Group blocks by time slot
   const timeSlots = [];
   const slotMap = new Map();
@@ -546,7 +665,10 @@ export default function PentaHomeScreen() {
                                 <BlockEntry
                                   block={block}
                                   pillarMap={pillarById}
+                                  allPillars={activePillars}
                                   photos={photos}
+                                  onUpdate={handleBlockChange}
+                                  onDelete={handleBlockChange}
                                 />
                               </div>
                             );
@@ -574,7 +696,10 @@ export default function PentaHomeScreen() {
                         duration={dur}
                         blocks={slot.blocks}
                         pillarMap={pillarById}
+                        allPillars={activePillars}
                         photos={photos}
+                        onUpdate={handleBlockChange}
+                        onDelete={handleBlockChange}
                       />
                     );
                   });

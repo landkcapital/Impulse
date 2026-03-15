@@ -138,6 +138,33 @@ export async function createTimeBlockWithPoints({
 }
 
 /**
+ * Replace pillar point allocations for a block.
+ */
+export async function replaceBlockPillarPoints(blockId, pillarAllocations) {
+  // Delete existing
+  const { error: delErr } = await supabase
+    .schema("penta")
+    .from("block_pillar_points")
+    .delete()
+    .eq("block_id", blockId);
+  if (delErr) throw delErr;
+
+  // Insert new
+  if (pillarAllocations && pillarAllocations.length > 0) {
+    const rows = pillarAllocations.map((a) => ({
+      block_id: blockId,
+      pillar_id: a.pillarId,
+      points: a.points,
+    }));
+    const { error: insErr } = await supabase
+      .schema("penta")
+      .from("block_pillar_points")
+      .insert(rows);
+    if (insErr) throw insErr;
+  }
+}
+
+/**
  * Update a time block.
  */
 export async function updateTimeBlock(blockId, updates) {
