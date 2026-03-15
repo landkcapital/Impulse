@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import usePentaDashboard from "../hooks/usePentaDashboard";
+import usePentaReview from "../hooks/usePentaReview";
 import usePentaTasks from "../hooks/usePentaTasks";
-import { formatDuration } from "../lib/time";
+import { formatDuration, formatTime } from "../lib/time";
 import {
   WORK_TAGS,
   WORK_TAG_COLOURS,
-  generateSubPillarInsight,
 } from "../lib/founderInsight";
 import useSubPillars from "../hooks/useSubPillars";
-import PentaBalancePentagon from "../components/PentaBalancePentagon";
+import { getPhotosForBlocks } from "../api/pentaBlockPhotosApi";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
 import PentaLoader from "../components/PentaLoader";
@@ -25,60 +25,116 @@ function formatToday() {
   });
 }
 
-function PillarCard({ pillar, points }) {
-  const hasPoints = points > 0;
+function formatTimeRange(increment) {
+  const now = new Date();
+  const end = new Date(now);
+  const start = new Date(now.getTime() - increment * 60000);
+  // Round to nearest increment
+  const roundedEnd = new Date(Math.round(end.getTime() / (increment * 60000)) * increment * 60000);
+  const roundedStart = new Date(roundedEnd.getTime() - increment * 60000);
+  const fmt = (d) =>
+    d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true });
+  return `${fmt(roundedStart)} – ${fmt(roundedEnd)}`;
+}
+
+// ─── Pillar Bar Squares ───
+function PillarBarSquare({ pillar, points, maxPoints }) {
+  const fillPct = maxPoints > 0 ? Math.min((points / maxPoints) * 100, 100) : 0;
 
   return (
-    <div className="card penta-pillar-card">
-      <div
-        className="penta-pillar-accent"
-        style={{ backgroundColor: pillar.colour }}
-      />
-      <div className="penta-pillar-info">
-        <div className="penta-pillar-name">{pillar.name}</div>
-        <div className="penta-pillar-sub">{pillar.key}</div>
+    <div className="penta-home-pillar-square">
+      <div className="penta-home-pillar-bar-bg">
+        <div
+          className="penta-home-pillar-bar-fill"
+          style={{
+            height: `${fillPct}%`,
+            backgroundColor: pillar.colour,
+          }}
+        />
       </div>
-      <div className={`penta-pillar-score ${hasPoints ? "has-points" : ""}`}>
-        {hasPoints ? formatDuration(points) : "0"}
-      </div>
+      <div className="penta-home-pillar-label">{pillar.name}</div>
     </div>
   );
 }
 
-function SubPillarFocusCard({ pillarName, subPillars, totals }) {
-  const insightText = generateSubPillarInsight(subPillars, totals, pillarName);
+// ─── Timeline (from History) ───
+function BlockEntry({ block, pillarMap, photos }) {
+  const [lightbox, setLightbox] = useState(null);
+
+  const allocations = (block.block_pillar_points || []).map((bp) => ({
+    pillar: pillarMap[bp.pillar_id],
+    points: bp.points,
+  }));
+
+  const blockPhotos = photos.filter((p) => p.block_id === block.id);
 
   return (
-    <div className="card penta-founder-card">
-      <div className="penta-founder-title">{pillarName} Focus Today</div>
-      <div className="penta-founder-rows">
-        {subPillars.map((sp) => {
-          const minutes = totals[sp.key] || 0;
-          return (
-            <div key={sp.key} className="penta-founder-row">
+    <div className="penta-rv-entry">
+      <div className="penta-rv-entry-summary">{block.summary}</div>
+      <div className="penta-rv-block-meta">
+        <div className="penta-rv-block-pills">
+          {allocations.map((a, i) =>
+            a.pillar ? (
               <span
-                className="penta-founder-dot"
-                style={{ backgroundColor: sp.colour || "#999" }}
-              />
-              <span className="penta-founder-label">{sp.label}</span>
-              <span className="penta-founder-value">
-                {minutes > 0 ? formatDuration(minutes) : "0m"}
+                key={i}
+                className="penta-rv-pill"
+                style={{
+                  backgroundColor: a.pillar.colour + "14",
+                  color: a.pillar.colour,
+                  borderColor: a.pillar.colour + "30",
+                }}
+              >
+                {a.pillar.name}
               </span>
-            </div>
-          );
-        })}
+            ) : null
+          )}
+        </div>
       </div>
-      {insightText && (
-        <div className="penta-founder-insight">{insightText}</div>
+      {blockPhotos.length > 0 && (
+        <div className="penta-rv-photos">
+          {blockPhotos.map((photo) => (
+            <img
+              key={photo.id}
+              src={photo.url}
+              alt=""
+              className="penta-rv-photo-thumb"
+              onClick={() => setLightbox(photo.url)}
+            />
+          ))}
+        </div>
+      )}
+      {lightbox && (
+        <div className="penta-lightbox" onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" className="penta-lightbox-img" />
+        </div>
       )}
     </div>
   );
 }
 
+function TimelineSlot({ timeLabel, duration, blocks, pillarMap, photos }) {
+  return (
+    <div className="penta-rv-block card">
+      <div className="penta-rv-block-header">
+        <div className="penta-rv-block-time">{timeLabel}</div>
+        <span className="penta-rv-block-dur">{formatDuration(duration)}</span>
+      </div>
+      {blocks.map((block) => (
+        <BlockEntry
+          key={block.id}
+          block={block}
+          pillarMap={pillarMap}
+          photos={photos}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Task Components ───
 function SubPillarBadge({ subPillarKey, allSubPillars }) {
   const sp = allSubPillars.find((s) => s.key === subPillarKey);
   if (!sp) {
-    // Fallback to hardcoded work tags
     const tag = WORK_TAGS.find((t) => t.key === subPillarKey);
     if (!tag) return null;
     const colour = WORK_TAG_COLOURS[subPillarKey] || "#999";
@@ -177,7 +233,7 @@ function QuickAddTask({ onAdd, pillars, subPillarsByPillar }) {
       setSelectedPillar(null);
       setSelectedSubPillar(null);
     } catch {
-      // silent — task stays in input for retry
+      // silent
     } finally {
       setAdding(false);
     }
@@ -246,7 +302,7 @@ function QuickAddTask({ onAdd, pillars, subPillarsByPillar }) {
 export default function PentaHomeScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { pillars, scores, loading, error, refresh, profile, workTagTotals } =
+  const { pillars, scores, loading, error, refresh, profile } =
     usePentaDashboard();
   const { subPillars, byPillar: subPillarsByPillar } = useSubPillars();
   const {
@@ -257,6 +313,17 @@ export default function PentaHomeScreen() {
     deleteTask,
     refresh: refreshTasks,
   } = usePentaTasks();
+
+  // Review data (for timeline)
+  const {
+    blocks,
+    pillars: reviewPillars,
+    pillarTotals,
+    loading: reviewLoading,
+    refresh: refreshReview,
+  } = usePentaReview();
+
+  const [photos, setPhotos] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const increment = profile?.increment_minutes || 15;
@@ -270,6 +337,14 @@ export default function PentaHomeScreen() {
     profile?.active_hours_end
   );
 
+  // Load photos for timeline blocks
+  useEffect(() => {
+    if (blocks.length > 0) {
+      const ids = blocks.map((b) => b.id);
+      getPhotosForBlocks(ids).then(setPhotos).catch(() => {});
+    }
+  }, [blocks]);
+
   // Show success toast if navigated back from log screen
   useEffect(() => {
     if (location.state?.logged) {
@@ -277,12 +352,12 @@ export default function PentaHomeScreen() {
       refresh();
       refreshTasks();
       refreshNudge();
-      // Clear navigation state so refresh doesn't re-trigger
+      refreshReview();
       window.history.replaceState({}, "");
       const timer = setTimeout(() => setShowSuccess(false), 3000);
       return () => clearTimeout(timer);
     }
-  }, [location.state, refresh, refreshTasks, refreshNudge]);
+  }, [location.state, refresh, refreshTasks, refreshNudge, refreshReview]);
 
   if (loading) {
     return (
@@ -308,24 +383,32 @@ export default function PentaHomeScreen() {
   }
 
   const activePillars = pillars.filter((p) => p.is_active);
-  const totalPoints = activePillars.reduce(
-    (sum, p) => sum + (scores[p.id] || 0),
-    0
-  );
+  const maxPoints = Math.max(1, ...activePillars.map((p) => scores[p.id] || 0));
 
   // Build pillar lookup by key for task dots
   const pillarByKey = {};
-  for (const p of pillars) {
-    pillarByKey[p.key] = p;
-  }
+  for (const p of pillars) pillarByKey[p.key] = p;
 
-  // Find the Work pillar to know if we should show the founder card
-  const workPillar = activePillars.find((p) => p.key === "work");
-  const workPoints = workPillar ? scores[workPillar.id] || 0 : 0;
+  // Build pillar lookup by id for timeline
+  const pillarById = {};
+  for (const p of pillars) pillarById[p.id] = p;
 
-  // Split tasks into non-negotiables and today tasks
+  // Split tasks
   const nonNegotiables = tasks.filter((t) => t.is_non_negotiable);
   const todayTasks = tasks.filter((t) => !t.is_non_negotiable);
+
+  // Group blocks by time slot
+  const timeSlots = [];
+  const slotMap = new Map();
+  for (const block of blocks) {
+    const key = `${block.start_at}|${block.end_at}`;
+    if (!slotMap.has(key)) {
+      const slot = { key, startAt: block.start_at, endAt: block.end_at, blocks: [] };
+      slotMap.set(key, slot);
+      timeSlots.push(slot);
+    }
+    slotMap.get(key).blocks.push(block);
+  }
 
   return (
     <div className="page penta-page penta-page-with-nav">
@@ -361,72 +444,71 @@ export default function PentaHomeScreen() {
         </div>
       )}
 
-      {/* CTA */}
+      {/* CTA with time range */}
       <div className="penta-cta">
         <button
           className="penta-cta-btn"
           onClick={() => navigate("/log")}
         >
-          Log last {formatDuration(increment)}
+          Log {formatTimeRange(increment)}
         </button>
         <div className="penta-cta-sub">
           Retrospective &middot; what did you just do?
         </div>
       </div>
 
-      {activePillars.length === 0 ? (
+      {activePillars.length > 0 && (
+        <>
+          {/* Pillar bar squares */}
+          <div className="penta-home-pillar-grid">
+            {activePillars.map((pillar) => (
+              <PillarBarSquare
+                key={pillar.id}
+                pillar={pillar}
+                points={scores[pillar.id] || 0}
+                maxPoints={maxPoints}
+              />
+            ))}
+          </div>
+
+          {/* Timeline */}
+          {blocks.length > 0 && (
+            <>
+              <div className="penta-rv-section-label">Timeline</div>
+              <div className="penta-rv-timeline">
+                {timeSlots.map((slot) => {
+                  const s = new Date(slot.startAt);
+                  const e = new Date(slot.endAt);
+                  const dur = Math.round((e - s) / 60000);
+                  return (
+                    <TimelineSlot
+                      key={slot.key}
+                      timeLabel={`${formatTime(s)} – ${formatTime(e)}`}
+                      duration={dur}
+                      blocks={slot.blocks}
+                      pillarMap={pillarById}
+                      photos={photos}
+                    />
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {activePillars.length === 0 && (
         <div className="card penta-empty">
           <div className="penta-empty-title">No pillars found</div>
           <div className="penta-empty-desc">
             Your life pillars will appear here once your account is set up.
           </div>
         </div>
-      ) : (
-        <>
-          {/* Balance Pentagon */}
-          <PentaBalancePentagon
-            pillars={pillars}
-            pillarTotals={scores}
-          />
-
-          <div className="penta-pillar-list">
-            {activePillars.map((pillar) => (
-              <PillarCard
-                key={pillar.id}
-                pillar={pillar}
-                points={scores[pillar.id] || 0}
-              />
-            ))}
-          </div>
-
-          {/* Sub-pillar focus cards for pillars with sub-pillars and logged time */}
-          {activePillars.map((pillar) => {
-            const subs = (subPillarsByPillar[pillar.key] || []).filter((sp) => sp.is_active);
-            const pillarPoints = scores[pillar.id] || 0;
-            if (subs.length === 0 || pillarPoints === 0) return null;
-            return (
-              <SubPillarFocusCard
-                key={pillar.key}
-                pillarName={pillar.name}
-                subPillars={subs}
-                totals={workTagTotals}
-              />
-            );
-          })}
-
-          <div className="card penta-total-row">
-            <span className="penta-total-label">Total today</span>
-            <span className="penta-total-value">
-              {totalPoints > 0 ? formatDuration(totalPoints) : "0"}
-            </span>
-          </div>
-
-        </>
       )}
 
       {/* Task section */}
       <div className="penta-tasks-section">
-        <div className="penta-tasks-header">Today</div>
+        <div className="penta-tasks-header">Tasks</div>
 
         {tasksLoading ? (
           <div className="penta-tasks-loading">Loading tasks...</div>
@@ -439,7 +521,6 @@ export default function PentaHomeScreen() {
           </div>
         ) : (
           <>
-            {/* Non-negotiables */}
             {nonNegotiables.length > 0 && (
               <div className="penta-tasks-group">
                 <div className="penta-tasks-group-label">Non-Negotiables</div>
@@ -456,7 +537,6 @@ export default function PentaHomeScreen() {
               </div>
             )}
 
-            {/* Today tasks */}
             <div className="penta-tasks-group">
               {nonNegotiables.length > 0 && (
                 <div className="penta-tasks-group-label">Today Tasks</div>
@@ -466,6 +546,7 @@ export default function PentaHomeScreen() {
                   key={task.id}
                   task={task}
                   pillarMap={pillarByKey}
+                  allSubPillars={subPillars}
                   onToggle={toggleTaskComplete}
                   onDelete={deleteTask}
                 />

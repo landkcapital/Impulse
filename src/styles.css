@@ -1736,6 +1736,47 @@ main {
   border-color: var(--border-hover);
 }
 
+/* Pillar Bar Squares (Home screen) */
+.penta-home-pillar-grid {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.penta-home-pillar-square {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+.penta-home-pillar-bar-bg {
+  width: 100%;
+  height: 80px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+.penta-home-pillar-bar-fill {
+  width: 100%;
+  border-radius: 0 0 7px 7px;
+  transition: height 0.4s ease;
+  min-height: 2px;
+}
+.penta-home-pillar-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 .penta-pillar-accent {
   width: 4px;
   height: 32px;
