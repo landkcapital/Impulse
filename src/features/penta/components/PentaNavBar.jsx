@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 const NAV_ITEMS = [
   { path: "/", label: "Home", icon: "home" },
   { path: "/log", label: "Log", icon: "log" },
+  { path: "/todos", label: "To Do", icon: "todos" },
   { path: "/review", label: "History", icon: "review" },
   { path: "/insights", label: "Insights", icon: "insights" },
   { path: "/settings", label: "Settings", icon: "settings" },
@@ -22,6 +23,13 @@ function NavIcon({ icon }) {
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="10" cy="10" r="7.5" />
           <path d="M10 5.5V10l3 2" />
+        </svg>
+      );
+    case "todos":
+      return (
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 5h12M4 10h12M4 15h8" />
+          <path d="M16 13l-2 2 4 0" />
         </svg>
       );
     case "review":

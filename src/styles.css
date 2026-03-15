@@ -3073,6 +3073,7 @@ main {
 
 /* ===== Penta Nav Bar ===== */
 
+/* Mobile: bottom nav */
 .penta-navbar {
   display: flex;
   align-items: center;
@@ -3120,9 +3121,352 @@ main {
   text-transform: uppercase;
 }
 
-/* Add bottom padding to page content when navbar is present */
+/* Mobile: bottom padding for page content */
 .penta-page-with-nav {
   padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)) !important;
+}
+
+/* Desktop: top nav */
+@media (min-width: 768px) {
+  .penta-navbar {
+    position: fixed;
+    top: 0;
+    bottom: auto;
+    border-top: none;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    padding: 0.5rem 1rem;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  .penta-navbar-item {
+    flex-direction: row;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    min-width: auto;
+    min-height: auto;
+    border-radius: var(--radius-sm);
+  }
+
+  .penta-navbar-item:hover {
+    background: var(--glow);
+  }
+
+  .penta-navbar-item.active {
+    background: var(--glow);
+  }
+
+  .penta-navbar-label {
+    font-size: 0.75rem;
+  }
+
+  .penta-page-with-nav {
+    padding-bottom: 1.5rem !important;
+    padding-top: 4rem !important;
+  }
+}
+
+/* ===== Penta To Do Screen ===== */
+
+.penta-todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.penta-todo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.penta-todo-row.done {
+  opacity: 0.5;
+}
+
+.penta-todo-checkbox {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.penta-todo-check {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border-hover);
+  transition: all 0.15s;
+}
+
+.penta-todo-check.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  position: relative;
+}
+
+.penta-todo-check.checked::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  width: 6px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.penta-todo-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.penta-todo-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  display: block;
+}
+
+.penta-todo-row.done .penta-todo-title {
+  text-decoration: line-through;
+}
+
+.penta-todo-tags {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.penta-todo-pillar-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid;
+}
+
+.penta-todo-sub-tag {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 8px;
+}
+
+.penta-todo-nn-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--glow);
+  padding: 0.1rem 0.4rem;
+  border-radius: 8px;
+}
+
+.penta-todo-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  padding: 0.25rem;
+  flex-shrink: 0;
+}
+
+.penta-todo-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin: 0.5rem 0 0.4rem;
+}
+
+.penta-todo-empty {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+}
+
+.penta-todo-empty-text {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+/* FAB */
+.penta-todo-fab {
+  position: fixed;
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+  right: 1.25rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gradient-btn);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  transition: transform 0.15s;
+}
+
+.penta-todo-fab:active {
+  transform: scale(0.92);
+}
+
+@media (min-width: 768px) {
+  .penta-todo-fab {
+    bottom: 2rem;
+  }
+}
+
+/* Add overlay / form */
+.penta-todo-add-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .penta-todo-add-overlay {
+    align-items: center;
+  }
+}
+
+.penta-todo-add-form {
+  width: 100%;
+  max-width: 420px;
+  padding: 1.25rem;
+  border-radius: var(--radius) var(--radius) var(--radius-sm) var(--radius-sm);
+  animation: todoSlideUp 0.2s ease-out;
+}
+
+@keyframes todoSlideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (min-width: 768px) {
+  .penta-todo-add-form {
+    border-radius: var(--radius);
+  }
+}
+
+.penta-todo-add-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.penta-todo-add-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.penta-todo-add-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.penta-todo-add-input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+
+.penta-todo-add-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--glow);
+}
+
+.penta-todo-add-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.penta-todo-pillar-grid,
+.penta-todo-sub-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.penta-todo-pillar-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+
+.penta-todo-pillar-btn.selected {
+  border-color: var(--accent);
+  background: var(--glow);
+  color: var(--text);
+}
+
+.penta-todo-pillar-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.penta-todo-sub-btn {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-family: inherit;
+  font-weight: 600;
+  transition: all 0.15s;
 }
 
 /* ===== Quick-Add Pillar Picker ===== */

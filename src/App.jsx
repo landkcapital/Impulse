@@ -13,6 +13,7 @@ import Account from "./pages/Account";
 import {
   PentaHomeScreen,
   PentaLogBlockScreen,
+  PentaTodosScreen,
   PentaReviewScreen,
   PentaInsightsScreen,
   PentaSettingsScreen,
@@ -98,6 +99,14 @@ export default function App() {
             element={
               <ProtectedRoute session={session} ready={ready}>
                 <PentaLogBlockScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/todos"
+            element={
+              <ProtectedRoute session={session} ready={ready}>
+                <PentaTodosScreen />
               </ProtectedRoute>
             }
           />
