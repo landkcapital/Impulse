@@ -3176,6 +3176,7 @@ main {
     display: flex;
     align-items: center;
     gap: 0.15rem;
+    margin-left: auto;
   }
 
   .penta-navbar-icon {
@@ -3215,7 +3216,7 @@ main {
   }
 
   .penta-navbar-account {
-    margin-left: auto;
+    margin-left: 0.5rem;
     color: var(--text-dim);
   }
 
