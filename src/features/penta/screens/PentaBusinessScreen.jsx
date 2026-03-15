@@ -269,7 +269,7 @@ function TaskRow({ task, onToggle, onDelete }) {
           </span>
         )}
       </div>
-      <button className="penta-biz-task-delete" onClick={() => onDelete(task.id)}>&times;</button>
+      <button className="penta-biz-task-delete" onClick={() => { if (confirm("Delete this task?")) onDelete(task.id); }}>&times;</button>
     </div>
   );
 }
