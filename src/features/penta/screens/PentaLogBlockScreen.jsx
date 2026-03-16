@@ -22,7 +22,7 @@ function makeEntry(defaultPillarId) {
   return {
     id: crypto.randomUUID(),
     summary: "",
-    pillarId: defaultPillarId || "",
+    pillarIds: defaultPillarId ? [defaultPillarId] : [],
     subPillarKey: "",
     photo: null,
   };
@@ -39,9 +39,13 @@ function EntryCard({
   onRemove,
 }) {
   const fileRef = useRef(null);
-  const selectedPillar = pillars.find((p) => p.id === entry.pillarId);
-  const subs = selectedPillar
-    ? (subPillarsByPillar[selectedPillar.key] || []).filter((sp) => sp.is_active)
+  const selectedPillars = pillars.filter((p) => entry.pillarIds.includes(p.id));
+  // Show sub-pillars for the first selected pillar that has them
+  const pillarWithSubs = selectedPillars.find(
+    (p) => (subPillarsByPillar[p.key] || []).some((sp) => sp.is_active)
+  );
+  const subs = pillarWithSubs
+    ? (subPillarsByPillar[pillarWithSubs.key] || []).filter((sp) => sp.is_active)
     : [];
 
   function update(updates) {
@@ -74,27 +78,31 @@ function EntryCard({
         autoFocus={index === 0}
       />
 
-      {/* Compact pillar picker */}
+      {/* Compact pillar picker (multi-select) */}
       <div className="penta-log-entry-pillars">
-        {pillars.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className={`penta-log-entry-pillar ${entry.pillarId === p.id ? "selected" : ""}`}
-            style={{
-              borderColor: p.colour,
-              backgroundColor: entry.pillarId === p.id ? p.colour : "transparent",
-              color: entry.pillarId === p.id ? "#fff" : p.colour,
-            }}
-            onClick={() => {
-              const updates = { pillarId: p.id };
-              if (entry.pillarId !== p.id) updates.subPillarKey = "";
-              update(updates);
-            }}
-          >
-            {p.name}
-          </button>
-        ))}
+        {pillars.map((p) => {
+          const isSelected = entry.pillarIds.includes(p.id);
+          return (
+            <button
+              key={p.id}
+              type="button"
+              className={`penta-log-entry-pillar ${isSelected ? "selected" : ""}`}
+              style={{
+                borderColor: p.colour,
+                backgroundColor: isSelected ? p.colour : "transparent",
+                color: isSelected ? "#fff" : p.colour,
+              }}
+              onClick={() => {
+                const newIds = isSelected
+                  ? entry.pillarIds.filter((id) => id !== p.id)
+                  : [...entry.pillarIds, p.id];
+                update({ pillarIds: newIds });
+              }}
+            >
+              {p.name}
+            </button>
+          );
+        })}
       </div>
 
       {/* Sub-pillar */}
@@ -241,7 +249,7 @@ export default function PentaLogBlockScreen() {
     if (valid.length === 0) return "Add at least one item";
     if (duration <= 0) return "End time must be after start time";
     for (const e of valid) {
-      if (!e.pillarId) return `Select a pillar for "${e.summary.trim()}"`;
+      if (!e.pillarIds || e.pillarIds.length === 0) return `Select a pillar for "${e.summary.trim()}"`;
     }
     return null;
   }
@@ -267,6 +275,12 @@ export default function PentaLogBlockScreen() {
       for (const entry of validEntries) {
         const workTag = entry.subPillarKey || linkedTask?.work_tag || null;
 
+        const perPillar = Math.round(totalPoints / entry.pillarIds.length);
+        const pillarAllocations = entry.pillarIds.map((pid, i) => ({
+          pillarId: pid,
+          points: i === 0 ? totalPoints - perPillar * (entry.pillarIds.length - 1) : perPillar,
+        }));
+
         const block = await createTimeBlockWithPoints({
           startAt: startDate.toISOString(),
           endAt: endDate.toISOString(),
@@ -274,7 +288,7 @@ export default function PentaLogBlockScreen() {
           summary: entry.summary.trim(),
           taskId: taskId || null,
           totalPoints,
-          pillarAllocations: [{ pillarId: entry.pillarId, points: totalPoints }],
+          pillarAllocations,
           workTag,
         });
 
