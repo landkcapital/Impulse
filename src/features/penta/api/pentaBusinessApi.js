@@ -80,6 +80,7 @@ export async function getAllBusinessTasks() {
     .schema("penta")
     .from("business_tasks")
     .select("*")
+    .is("deleted_at", null)
     .order("is_done", { ascending: true })
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -119,6 +120,35 @@ export async function toggleBusinessTask(taskId, isDone) {
 }
 
 export async function deleteBusinessTask(taskId) {
+  const { error } = await supabase
+    .schema("penta")
+    .from("business_tasks")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", taskId);
+  if (error) throw error;
+}
+
+export async function getDeletedBusinessTasks() {
+  const { data, error } = await supabase
+    .schema("penta")
+    .from("business_tasks")
+    .select("*")
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function restoreBusinessTask(taskId) {
+  const { error } = await supabase
+    .schema("penta")
+    .from("business_tasks")
+    .update({ deleted_at: null })
+    .eq("id", taskId);
+  if (error) throw error;
+}
+
+export async function permanentlyDeleteBusinessTask(taskId) {
   const { error } = await supabase
     .schema("penta")
     .from("business_tasks")

@@ -18,6 +18,47 @@ import PentaNavBar from "../components/PentaNavBar";
 import PentaLoader from "../components/PentaLoader";
 import useSubPillars from "../hooks/useSubPillars";
 
+// ─── Custom Time Stepper ───
+function TimeStepInput({ value, onChange, step }) {
+  // value is "HH:MM", step is minutes
+  function adjust(delta) {
+    try {
+      const [h, m] = value.split(":").map(Number);
+      const d = new Date();
+      d.setHours(h, m + delta * step, 0, 0);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      onChange(`${hh}:${mm}`);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Format for display (12-hour)
+  const display = (() => {
+    try {
+      const [h, m] = value.split(":").map(Number);
+      const ampm = h >= 12 ? "PM" : "AM";
+      const h12 = h % 12 || 12;
+      return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+    } catch {
+      return value;
+    }
+  })();
+
+  return (
+    <div className="penta-time-stepper">
+      <button type="button" className="penta-time-step-btn" onClick={() => adjust(-1)} aria-label="Decrease time">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M4 8h8" /></svg>
+      </button>
+      <span className="penta-time-step-display">{display}</span>
+      <button type="button" className="penta-time-step-btn" onClick={() => adjust(1)} aria-label="Increase time">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M8 4v8M4 8h8" /></svg>
+      </button>
+    </div>
+  );
+}
+
 function makeEntry(defaultPillarId) {
   return {
     id: crypto.randomUUID(),
@@ -376,12 +417,10 @@ export default function PentaLogBlockScreen() {
         <div className="penta-log-time-row">
           <div className="penta-log-time-field">
             <label className="penta-log-label">Start</label>
-            <input
-              type="time"
-              className="penta-log-time-input"
+            <TimeStepInput
               value={startTime}
-              onChange={(e) => {
-                const newStart = e.target.value;
+              step={increment}
+              onChange={(newStart) => {
                 setStartTime(newStart);
                 const gap = lockedIncrement || increment;
                 try {
@@ -392,28 +431,25 @@ export default function PentaLogBlockScreen() {
                   // keep existing end
                 }
               }}
-              step={increment * 60}
             />
           </div>
           <div className="penta-log-time-divider">&rarr;</div>
           <div className="penta-log-time-field">
             <label className="penta-log-label">End</label>
-            <input
-              type="time"
-              className="penta-log-time-input"
+            <TimeStepInput
               value={endTime}
-              onChange={(e) => {
-                setEndTime(e.target.value);
+              step={increment}
+              onChange={(newEnd) => {
+                setEndTime(newEnd);
                 try {
                   const s = parseTimeToday(startTime);
-                  const newE = parseTimeToday(e.target.value);
+                  const newE = parseTimeToday(newEnd);
                   const newGap = getDurationMinutes(s, newE);
                   if (newGap > 0) setLockedIncrement(newGap);
                 } catch {
                   // ignore
                 }
               }}
-              step={increment * 60}
             />
           </div>
           <div className="penta-log-duration">

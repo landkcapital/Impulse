@@ -8,22 +8,28 @@ import {
   createBusinessTask,
   toggleBusinessTask,
   deleteBusinessTask,
+  getDeletedBusinessTasks,
+  restoreBusinessTask,
+  permanentlyDeleteBusinessTask,
 } from "../api/pentaBusinessApi";
 
 export default function useBusiness() {
   const [roles, setRoles] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [deletedTasks, setDeletedTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     try {
-      const [r, t] = await Promise.all([
+      const [r, t, d] = await Promise.all([
         getBusinessRoles(),
         getAllBusinessTasks(),
+        getDeletedBusinessTasks(),
       ]);
       setRoles(r);
       setTasks(t);
+      setDeletedTasks(d);
       setError(null);
     } catch (err) {
       setError(err.message || "Failed to load");
@@ -74,7 +80,21 @@ export default function useBusiness() {
 
   async function removeTask(taskId) {
     await deleteBusinessTask(taskId);
+    const removed = tasks.find((t) => t.id === taskId);
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    if (removed) setDeletedTasks((prev) => [{ ...removed, deleted_at: new Date().toISOString() }, ...prev]);
+  }
+
+  async function restoreTask(taskId) {
+    await restoreBusinessTask(taskId);
+    const restored = deletedTasks.find((t) => t.id === taskId);
+    setDeletedTasks((prev) => prev.filter((t) => t.id !== taskId));
+    if (restored) setTasks((prev) => [{ ...restored, deleted_at: null }, ...prev]);
+  }
+
+  async function permanentlyRemoveTask(taskId) {
+    await permanentlyDeleteBusinessTask(taskId);
+    setDeletedTasks((prev) => prev.filter((t) => t.id !== taskId));
   }
 
   // Tasks grouped by role
@@ -87,6 +107,7 @@ export default function useBusiness() {
   return {
     roles,
     tasks,
+    deletedTasks,
     tasksByRole,
     loading,
     error,
@@ -96,6 +117,8 @@ export default function useBusiness() {
     addTask,
     toggleTask,
     removeTask,
+    restoreTask,
+    permanentlyRemoveTask,
     refresh: load,
   };
 }

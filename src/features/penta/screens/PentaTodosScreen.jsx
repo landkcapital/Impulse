@@ -73,6 +73,7 @@ function AddTodoForm({ pillars, subPillarsByPillar, onAdd }) {
   const [pillarKey, setPillarKey] = useState("");
   const [subPillarKey, setSubPillarKey] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   const activeSubs = pillarKey
     ? (subPillarsByPillar[pillarKey] || []).filter((sp) => sp.is_active)
@@ -84,6 +85,7 @@ function AddTodoForm({ pillars, subPillarsByPillar, onAdd }) {
     if (!trimmed || saving) return;
 
     setSaving(true);
+    setSaveError(null);
     try {
       await onAdd({
         title: trimmed,
@@ -95,8 +97,8 @@ function AddTodoForm({ pillars, subPillarsByPillar, onAdd }) {
       setPillarKey("");
       setSubPillarKey("");
       setOpen(false);
-    } catch {
-      // stay open on error
+    } catch (err) {
+      setSaveError(err.message || "Failed to save todo");
     } finally {
       setSaving(false);
     }
@@ -181,6 +183,8 @@ function AddTodoForm({ pillars, subPillarsByPillar, onAdd }) {
             </div>
           </>
         )}
+
+        {saveError && <div className="form-error" style={{ marginTop: "0.5rem" }}>{saveError}</div>}
 
         <button
           type="submit"

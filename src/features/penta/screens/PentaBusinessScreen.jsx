@@ -125,7 +125,7 @@ function FocusQueue({ tasks, roles, onToggle, onDelete }) {
                       )}
                     </div>
                   </div>
-                  <button className="penta-biz-task-delete" onClick={() => onDelete(t.id)}>&times;</button>
+                  <button className="penta-biz-task-delete" onClick={() => { if (confirm("Delete this task?")) onDelete(t.id); }}>&times;</button>
                 </div>
               );
             })}
@@ -581,11 +581,58 @@ function SetupScreen({ onSetup, loading: setupLoading }) {
   );
 }
 
+// ─── Deleted / Trash View ───
+function DeletedView({ deletedTasks, roles, onRestore, onPermanentDelete }) {
+  const roleMap = {};
+  for (const r of roles) roleMap[r.id] = r;
+
+  if (deletedTasks.length === 0) {
+    return <div className="penta-biz-no-tasks" style={{ padding: "2rem" }}>Trash is empty</div>;
+  }
+
+  return (
+    <div className="penta-biz-deleted-list">
+      {deletedTasks.map((t) => {
+        const role = roleMap[t.role_id];
+        return (
+          <div key={t.id} className="penta-biz-task penta-biz-deleted-task">
+            <div className="penta-biz-task-content">
+              <span className="penta-biz-task-title">{t.title}</span>
+              <div className="penta-biz-focus-meta">
+                <span className="penta-biz-role-dot" style={{ backgroundColor: role?.colour }} />
+                <span className="penta-biz-focus-role-name">{role?.name}</span>
+                {t.deleted_at && (
+                  <span className="penta-biz-task-due">
+                    Deleted {formatDateTime(t.deleted_at)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              className="penta-biz-restore-btn"
+              onClick={() => onRestore(t.id)}
+            >
+              Restore
+            </button>
+            <button
+              className="penta-biz-task-delete"
+              onClick={() => { if (confirm("Permanently delete? This cannot be undone.")) onPermanentDelete(t.id); }}
+            >
+              &times;
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Main Screen ───
 export default function PentaBusinessScreen() {
   const {
-    roles, tasks, tasksByRole, loading, error,
-    addRole, removeRole, addTask, toggleTask, removeTask, refresh,
+    roles, tasks, deletedTasks, tasksByRole, loading, error,
+    addRole, removeRole, addTask, toggleTask, removeTask,
+    restoreTask, permanentlyRemoveTask, refresh,
   } = useBusiness();
 
   const [settingUp, setSettingUp] = useState(false);
@@ -686,6 +733,12 @@ export default function PentaBusinessScreen() {
             >
               Prompts
             </button>
+            <button
+              className={`penta-biz-view-btn ${view === "deleted" ? "active" : ""}`}
+              onClick={() => setView("deleted")}
+            >
+              Deleted{deletedTasks.length > 0 ? ` (${deletedTasks.length})` : ""}
+            </button>
           </div>
 
           {view === "focus" ? (
@@ -716,6 +769,13 @@ export default function PentaBusinessScreen() {
 
               <AddRoleForm onAdd={addRole} />
             </>
+          ) : view === "deleted" ? (
+            <DeletedView
+              deletedTasks={deletedTasks}
+              roles={roles}
+              onRestore={restoreTask}
+              onPermanentDelete={permanentlyRemoveTask}
+            />
           ) : (
             <PromptsView />
           )}
