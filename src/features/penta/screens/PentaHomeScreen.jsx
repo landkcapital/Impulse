@@ -517,8 +517,9 @@ export default function PentaHomeScreen() {
   for (const p of pillars) pillarById[p.id] = p;
 
   // Split tasks
-  const nonNegotiables = tasks.filter((t) => t.is_non_negotiable);
-  const todayTasks = tasks.filter((t) => !t.is_non_negotiable);
+  const nonNegotiables = tasks.filter((t) => t.is_non_negotiable && !t.is_done);
+  const todayTasks = tasks.filter((t) => !t.is_non_negotiable && !t.is_done);
+  const completedTasks = tasks.filter((t) => t.is_done);
 
   function handleBlockChange() {
     refresh();
@@ -758,21 +759,39 @@ export default function PentaHomeScreen() {
               </div>
             )}
 
-            <div className="penta-tasks-group">
-              {nonNegotiables.length > 0 && (
-                <div className="penta-tasks-group-label">Today Tasks</div>
-              )}
-              {todayTasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  pillarMap={pillarByKey}
-                  allSubPillars={subPillars}
-                  onToggle={toggleTaskComplete}
-                  onDelete={deleteTask}
-                />
-              ))}
-            </div>
+            {todayTasks.length > 0 && (
+              <div className="penta-tasks-group">
+                {nonNegotiables.length > 0 && (
+                  <div className="penta-tasks-group-label">Today Tasks</div>
+                )}
+                {todayTasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    pillarMap={pillarByKey}
+                    allSubPillars={subPillars}
+                    onToggle={toggleTaskComplete}
+                    onDelete={deleteTask}
+                  />
+                ))}
+              </div>
+            )}
+
+            {completedTasks.length > 0 && (
+              <div className="penta-tasks-group">
+                <div className="penta-tasks-group-label">Completed ({completedTasks.length})</div>
+                {completedTasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    pillarMap={pillarByKey}
+                    allSubPillars={subPillars}
+                    onToggle={toggleTaskComplete}
+                    onDelete={deleteTask}
+                  />
+                ))}
+              </div>
+            )}
 
             <QuickAddTask onAdd={createTask} pillars={activePillars} subPillarsByPillar={subPillarsByPillar} />
           </>
