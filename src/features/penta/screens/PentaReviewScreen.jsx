@@ -129,6 +129,9 @@ export default function PentaReviewScreen() {
     }
   }, [blocks]);
 
+  // Timeline sort
+  const [timelineSort, setTimelineSort] = useState("recent");
+
   // Reflection form state
   const [reflection, setReflection] = useState("");
   const [tomorrowIntent, setTomorrowIntent] = useState("");
@@ -207,6 +210,42 @@ export default function PentaReviewScreen() {
     slotMap.get(key).blocks.push(block);
   }
 
+  // Sort timeline slots
+  const sortedSlots = [...timeSlots];
+  if (timelineSort === "recent") {
+    sortedSlots.sort((a, b) => new Date(b.startAt) - new Date(a.startAt));
+  } else if (timelineSort === "earliest") {
+    sortedSlots.sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
+  }
+  // "pillar" handled separately below
+
+  // Group by pillar for "By Pillar" view
+  const pillarGroups = (() => {
+    if (timelineSort !== "pillar") return null;
+    const groups = {};
+    for (const slot of timeSlots) {
+      for (const block of slot.blocks) {
+        const allocs = block.block_pillar_points || [];
+        for (const bp of allocs) {
+          const p = pillarMap[bp.pillar_id];
+          if (!p) continue;
+          if (!groups[p.id]) groups[p.id] = { pillar: p, slots: [] };
+          // Add the whole slot (avoid duplicates)
+          if (!groups[p.id].slots.find((s) => s.key === slot.key)) {
+            groups[p.id].slots.push(slot);
+          }
+        }
+        if (allocs.length === 0) {
+          if (!groups["none"]) groups["none"] = { pillar: { name: "Unassigned", colour: "#999", id: "none" }, slots: [] };
+          if (!groups["none"].slots.find((s) => s.key === slot.key)) {
+            groups["none"].slots.push(slot);
+          }
+        }
+      }
+    }
+    return Object.values(groups);
+  })();
+
   return (
     <div className="page penta-page penta-page-with-nav">
       <PentaHeader
@@ -245,7 +284,22 @@ export default function PentaReviewScreen() {
       )}
 
       {/* Timeline */}
-      <div className="penta-rv-section-label">Timeline</div>
+      <div className="penta-timeline-header">
+        <div className="penta-rv-section-label" style={{ margin: 0 }}>Timeline</div>
+        {blocks.length > 0 && (
+          <div className="penta-timeline-sort-toggle">
+            {["recent", "earliest", "pillar"].map((mode) => (
+              <button
+                key={mode}
+                className={`penta-timeline-sort-btn ${timelineSort === mode ? "active" : ""}`}
+                onClick={() => setTimelineSort(mode)}
+              >
+                {mode === "recent" ? "Recent" : mode === "earliest" ? "Earliest" : "By Pillar"}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       {blocks.length === 0 ? (
         <div className="card penta-rv-empty">
           <div className="penta-rv-empty-title">No time blocks logged today</div>
@@ -260,9 +314,35 @@ export default function PentaReviewScreen() {
             Log a block
           </button>
         </div>
+      ) : timelineSort === "pillar" && pillarGroups ? (
+        <div className="penta-rv-timeline">
+          {pillarGroups.map((group) => (
+            <div key={group.pillar.id} className="penta-timeline-pillar-group">
+              <div className="penta-timeline-pillar-label">
+                <span className="penta-timeline-pillar-dot" style={{ backgroundColor: group.pillar.colour }} />
+                {group.pillar.name}
+              </div>
+              {group.slots.map((slot) => {
+                const s = new Date(slot.startAt);
+                const e = new Date(slot.endAt);
+                const dur = Math.round((e - s) / 60000);
+                return (
+                  <TimelineSlot
+                    key={slot.key}
+                    timeLabel={`${formatTime(s)} – ${formatTime(e)}`}
+                    duration={dur}
+                    blocks={slot.blocks}
+                    pillarMap={pillarMap}
+                    photos={photos}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="penta-rv-timeline">
-          {timeSlots.map((slot) => {
+          {sortedSlots.map((slot) => {
             const s = new Date(slot.startAt);
             const e = new Date(slot.endAt);
             const dur = Math.round((e - s) / 60000);

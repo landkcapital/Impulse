@@ -596,6 +596,47 @@ function SetupScreen({ onSetup, loading: setupLoading }) {
   );
 }
 
+// ─── Completed View ───
+function CompletedView({ tasks, roles, onToggle }) {
+  const roleMap = {};
+  for (const r of roles) roleMap[r.id] = r;
+
+  const completed = tasks
+    .filter((t) => t.is_done)
+    .sort((a, b) => (b.done_at || "").localeCompare(a.done_at || ""));
+
+  if (completed.length === 0) {
+    return <div className="penta-biz-no-tasks" style={{ padding: "2rem" }}>No completed tasks yet</div>;
+  }
+
+  return (
+    <div className="penta-biz-completed-list">
+      {completed.map((t) => {
+        const role = roleMap[t.role_id];
+        return (
+          <div key={t.id} className="penta-biz-task done">
+            <button className="penta-biz-task-check" onClick={() => onToggle(t.id, false)}>
+              <span className="penta-todo-check checked" />
+            </button>
+            <div className="penta-biz-task-content">
+              <span className="penta-biz-task-title" style={{ textDecoration: "line-through", opacity: 0.7 }}>{t.title}</span>
+              <div className="penta-biz-focus-meta">
+                <span className="penta-biz-role-dot" style={{ backgroundColor: role?.colour }} />
+                <span className="penta-biz-focus-role-name">{role?.name}</span>
+                {t.done_at && (
+                  <span className="penta-biz-task-due">
+                    {formatDateTime(t.done_at)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Deleted / Trash View ───
 function DeletedView({ deletedTasks, roles, onRestore, onPermanentDelete }) {
   const roleMap = {};
@@ -770,6 +811,12 @@ export default function PentaBusinessScreen() {
               By Role
             </button>
             <button
+              className={`penta-biz-view-btn ${view === "completed" ? "active" : ""}`}
+              onClick={() => setView("completed")}
+            >
+              Completed
+            </button>
+            <button
               className={`penta-biz-view-btn ${view === "prompts" ? "active" : ""}`}
               onClick={() => setView("prompts")}
             >
@@ -811,6 +858,12 @@ export default function PentaBusinessScreen() {
 
               <AddRoleForm onAdd={addRole} />
             </>
+          ) : view === "completed" ? (
+            <CompletedView
+              tasks={tasks}
+              roles={roles}
+              onToggle={toggleTask}
+            />
           ) : view === "deleted" ? (
             <DeletedView
               deletedTasks={deletedTasks}
