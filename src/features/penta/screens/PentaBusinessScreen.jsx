@@ -1,9 +1,24 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import useBusiness from "../hooks/useBusiness";
 import { uploadBlockPhoto } from "../api/pentaBlockPhotosApi";
 import PentaHeader from "../components/PentaHeader";
 import PentaNavBar from "../components/PentaNavBar";
 import PentaLoader from "../components/PentaLoader";
+
+// ─── Confirm Modal (cannot be suppressed like browser confirm) ───
+function ConfirmModal({ message, onConfirm, onCancel }) {
+  return (
+    <div className="penta-biz-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div className="penta-biz-confirm-modal card">
+        <div className="penta-biz-confirm-message">{message}</div>
+        <div className="penta-biz-confirm-actions">
+          <button className="btn small" onClick={onCancel}>Cancel</button>
+          <button className="btn small penta-biz-confirm-delete" onClick={onConfirm}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const DEFAULT_ROLES = [
   { name: "CEO", colour: "#1e293b", description: "Strategy, fundraising, partnerships, overall direction" },
@@ -125,7 +140,7 @@ function FocusQueue({ tasks, roles, onToggle, onDelete }) {
                       )}
                     </div>
                   </div>
-                  <button className="penta-biz-task-delete" onClick={() => { if (confirm("Delete this task?")) onDelete(t.id); }}>&times;</button>
+                  <button className="penta-biz-task-delete" onClick={() => onDelete(t.id)}>&times;</button>
                 </div>
               );
             })}
@@ -269,7 +284,7 @@ function TaskRow({ task, onToggle, onDelete }) {
           </span>
         )}
       </div>
-      <button className="penta-biz-task-delete" onClick={() => { if (confirm("Delete this task?")) onDelete(task.id); }}>&times;</button>
+      <button className="penta-biz-task-delete" onClick={() => onDelete(task.id)}>&times;</button>
     </div>
   );
 }
@@ -353,7 +368,7 @@ function RoleCard({ role, tasks, allTasks, maxCompleted, onToggleTask, onDeleteT
             className="penta-biz-role-remove"
             onClick={(e) => {
               e.stopPropagation();
-              if (window.confirm(`Remove "${role.name}" role and all its tasks?`)) onDeleteRole(role.id);
+              onDeleteRole(role.id);
             }}
           >
             Remove role
@@ -616,7 +631,7 @@ function DeletedView({ deletedTasks, roles, onRestore, onPermanentDelete }) {
             </button>
             <button
               className="penta-biz-task-delete"
-              onClick={() => { if (confirm("Permanently delete? This cannot be undone.")) onPermanentDelete(t.id); }}
+              onClick={() => onPermanentDelete(t.id)}
             >
               &times;
             </button>
@@ -638,6 +653,33 @@ export default function PentaBusinessScreen() {
   const [settingUp, setSettingUp] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [view, setView] = useState("focus"); // "focus" or "roles"
+  const [pendingDelete, setPendingDelete] = useState(null); // { id, message, action }
+
+  const requestDeleteTask = useCallback((taskId) => {
+    const task = tasks.find((t) => t.id === taskId);
+    setPendingDelete({
+      id: taskId,
+      message: `Delete "${task?.title || "this task"}"?`,
+      action: () => { removeTask(taskId); setPendingDelete(null); },
+    });
+  }, [tasks, removeTask]);
+
+  const requestDeleteRole = useCallback((roleId) => {
+    const role = roles.find((r) => r.id === roleId);
+    setPendingDelete({
+      id: roleId,
+      message: `Remove "${role?.name}" role and all its tasks?`,
+      action: () => { removeRole(roleId); setPendingDelete(null); },
+    });
+  }, [roles, removeRole]);
+
+  const requestPermanentDelete = useCallback((taskId) => {
+    setPendingDelete({
+      id: taskId,
+      message: "Permanently delete? This cannot be undone.",
+      action: () => { permanentlyRemoveTask(taskId); setPendingDelete(null); },
+    });
+  }, [permanentlyRemoveTask]);
 
   async function handleSetup() {
     setSettingUp(true);
@@ -746,7 +788,7 @@ export default function PentaBusinessScreen() {
               tasks={tasks}
               roles={roles}
               onToggle={toggleTask}
-              onDelete={removeTask}
+              onDelete={requestDeleteTask}
             />
           ) : view === "roles" ? (
             <>
@@ -760,9 +802,9 @@ export default function PentaBusinessScreen() {
                     allTasks={tasks}
                     maxCompleted={maxCompleted}
                     onToggleTask={toggleTask}
-                    onDeleteTask={removeTask}
+                    onDeleteTask={requestDeleteTask}
                     onAddTask={addTask}
-                    onDeleteRole={removeRole}
+                    onDeleteRole={requestDeleteRole}
                   />
                 ))}
               </div>
@@ -774,7 +816,7 @@ export default function PentaBusinessScreen() {
               deletedTasks={deletedTasks}
               roles={roles}
               onRestore={restoreTask}
-              onPermanentDelete={permanentlyRemoveTask}
+              onPermanentDelete={requestPermanentDelete}
             />
           ) : (
             <PromptsView />
@@ -788,6 +830,14 @@ export default function PentaBusinessScreen() {
           roles={roles}
           onAdd={addTask}
           onClose={() => setShowAddModal(false)}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmModal
+          message={pendingDelete.message}
+          onConfirm={pendingDelete.action}
+          onCancel={() => setPendingDelete(null)}
         />
       )}
 

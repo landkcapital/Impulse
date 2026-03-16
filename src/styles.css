@@ -5011,6 +5011,31 @@ main {
   animation: todoSlideUp 0.2s ease-out;
 }
 
+.penta-biz-confirm-modal {
+  width: 100%;
+  max-width: 340px;
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  animation: todoSlideUp 0.2s ease-out;
+  text-align: center;
+}
+.penta-biz-confirm-message {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+}
+.penta-biz-confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+.penta-biz-confirm-delete {
+  background: var(--red, #dc2626) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
 .penta-biz-modal-header {
   display: flex;
   align-items: center;
