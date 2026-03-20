@@ -7,6 +7,7 @@ import { createTimeBlockWithPoints } from "../api/pentaTimeBlocksApi";
 import { uploadBlockPhoto } from "../api/pentaBlockPhotosApi";
 import {
   getDefaultBlock,
+  getCurrentBlock,
   formatTime,
   parseTimeToday,
   getDurationMinutes,
@@ -24,11 +25,22 @@ function TimeStepInput({ value, onChange, step }) {
   function adjust(delta) {
     try {
       const [h, m] = value.split(":").map(Number);
-      const d = new Date();
-      d.setHours(h, m + delta * step, 0, 0);
-      const hh = String(d.getHours()).padStart(2, "0");
-      const mm = String(d.getMinutes()).padStart(2, "0");
-      onChange(`${hh}:${mm}`);
+      const totalMins = h * 60 + m;
+      // Snap to the next/prev increment boundary rather than just adding minutes.
+      // This ensures the time always lands on a clean boundary.
+      let newTotal;
+      if (delta > 0) {
+        const next = Math.ceil((totalMins + 1) / step) * step;
+        newTotal = next;
+      } else {
+        const prev = Math.floor((totalMins - 1) / step) * step;
+        newTotal = prev;
+      }
+      // Wrap around 24h (1440 min)
+      newTotal = ((newTotal % 1440) + 1440) % 1440;
+      const newH = Math.floor(newTotal / 60);
+      const newM = newTotal % 60;
+      onChange(`${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}`);
     } catch {
       // ignore
     }
@@ -228,6 +240,7 @@ export default function PentaLogBlockScreen() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [lockedIncrement, setLockedIncrement] = useState(null);
+  const [periodMode, setPeriodMode] = useState("previous"); // "previous" | "current"
   const [entries, setEntries] = useState([]);
   const [taskId, setTaskId] = useState("");
 
@@ -414,6 +427,35 @@ export default function PentaLogBlockScreen() {
 
       {/* Time range */}
       <div className="card penta-log-section">
+        {/* Period selector */}
+        <div className="penta-log-period-selector">
+          <button
+            type="button"
+            className={`penta-log-period-btn ${periodMode === "previous" ? "selected" : ""}`}
+            onClick={() => {
+              setPeriodMode("previous");
+              const { start, end } = getDefaultBlock(increment);
+              setStartTime(formatTime(start));
+              setEndTime(formatTime(end));
+              setLockedIncrement(increment);
+            }}
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            className={`penta-log-period-btn ${periodMode === "current" ? "selected" : ""}`}
+            onClick={() => {
+              setPeriodMode("current");
+              const { start, end } = getCurrentBlock(increment);
+              setStartTime(formatTime(start));
+              setEndTime(formatTime(end));
+              setLockedIncrement(increment);
+            }}
+          >
+            Current
+          </button>
+        </div>
         <div className="penta-log-time-row">
           <div className="penta-log-time-field">
             <label className="penta-log-label">Start</label>

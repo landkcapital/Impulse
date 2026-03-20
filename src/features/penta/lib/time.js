@@ -23,6 +23,18 @@ export function getDefaultBlock(incrementMinutes = 15) {
 }
 
 /**
+ * Compute the current (in-progress) time block.
+ * start = current time floored to increment
+ * end   = start + incrementMinutes
+ */
+export function getCurrentBlock(incrementMinutes = 15) {
+  const now = new Date();
+  const start = floorToIncrement(now, incrementMinutes);
+  const end = new Date(start.getTime() + incrementMinutes * 60 * 1000);
+  return { start, end };
+}
+
+/**
  * Format a Date to "HH:MM" for display and time inputs.
  */
 export function formatTime(date) {

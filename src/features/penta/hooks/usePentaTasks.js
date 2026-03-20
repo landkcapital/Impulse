@@ -20,8 +20,13 @@ export default function usePentaTasks() {
 
       const today = getTodayDateString();
 
-      // Stamp any templates that haven't been copied yet (idempotent)
-      await copyTemplatesToDate(today);
+      // Stamp any templates that haven't been copied yet (idempotent).
+      // Failure here is non-fatal — don't let it prevent tasks from loading.
+      try {
+        await copyTemplatesToDate(today);
+      } catch (templateErr) {
+        console.warn("Template copy failed (non-fatal):", templateErr);
+      }
 
       const data = await getTasksForDate(today);
       setTasks(data);

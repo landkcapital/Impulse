@@ -1981,6 +1981,36 @@ main {
   margin-bottom: 0.5rem;
 }
 
+/* Period selector */
+.penta-log-period-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.875rem;
+}
+
+.penta-log-period-btn {
+  flex: 1;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.penta-log-period-btn.selected {
+  background: var(--accent);
+  color: #fff;
+}
+
+.penta-log-period-btn:not(.selected):hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
 /* Time row */
 .penta-log-time-row {
   display: flex;
